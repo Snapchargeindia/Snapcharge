@@ -66,7 +66,7 @@ const Navbar = () => {
   return (
     <div className="fixed top-4 left-0 right-0 z-[999] flex justify-center">
       <div className="w-[92%] max-w-6xl">
-        <header className="rounded-[26px] bg-[#FAEBD7]/95 backdrop-blur-md border-2 border-[#d9ccb8] shadow-[0_12px_40px_rgba(67,96,86,0.14)] overflow-hidden">
+        <header className="rounded-[26px] bg-[#FAEBD7]/95 backdrop-blur-md border-2 border-[#9DC183] shadow-[0_12px_40px_rgba(67,96,86,0.14)]">
           <div className="flex h-[70px] items-center px-4 sm:px-6">
             <Link
               to="/"
@@ -140,7 +140,7 @@ const Navbar = () => {
 
               <button
                 onClick={() => setMobileOpen(!mobileOpen)}
-                className="h-10 w-10 rounded-full border border-[#d9ccb8] bg-white/60 text-[#436056] text-xl flex items-center justify-center shadow-sm"
+                className="h-10 w-10 rounded-full border border-[#9DC183] bg-white/60 text-[#436056] text-xl flex items-center justify-center shadow-sm"
               >
                 ☰
               </button>
@@ -149,7 +149,7 @@ const Navbar = () => {
 
           {/* MOBILE MENU */}
           {mobileOpen && (
-            <div className="md:hidden border-t border-[#dccfbe] bg-[#fffaf2] px-4 pb-4">
+            <div className="md:hidden border-t border-[#9DC183] bg-[#fffaf2] px-4 pb-4">
               <MobileSection
                 title="Covers"
                 items={coverItems}
@@ -188,7 +188,7 @@ const Dropdown = ({ label, items, openMenu, setOpenMenu, name, routes }) => {
   const isOpen = openMenu === name;
 
   const panelBase =
-    "absolute left-0 top-full mt-4 w-64 rounded-[22px] bg-[#fffaf4] border border-[#e6dac9] shadow-[0_18px_35px_rgba(0,0,0,0.10)] backdrop-blur-md transition-all duration-300 overflow-hidden";
+    "absolute left-0 top-full mt-4 w-64 rounded-[22px] bg-[#fffaf4] border border-[#9DC183] shadow-[0_18px_35px_rgba(0,0,0,0.10)] backdrop-blur-md transition-all duration-300 overflow-hidden z-[1000]";
   const panelState = isOpen
     ? " opacity-100 visible translate-y-0"
     : " opacity-0 invisible -translate-y-2";
@@ -237,7 +237,7 @@ const MobileSection = ({ title, items, routes, setMobileOpen }) => {
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="py-2 border-b border-[#eee1d0] last:border-b-0">
+    <div className="py-2 border-b border-[#dfe8d7] last:border-b-0">
       <button
         onClick={() => setOpen(!open)}
         className="w-full text-left py-2 font-semibold text-[#436056] flex items-center justify-between"
@@ -253,7 +253,7 @@ const MobileSection = ({ title, items, routes, setMobileOpen }) => {
               key={item}
               to={routes[item]}
               onClick={() => setMobileOpen(false)}
-              className="block py-2 text-sm text-[#436056]"
+              className="block py-2 text-sm text-[#436056] hover:text-[#9DC183] transition"
             >
               {item}
             </Link>
