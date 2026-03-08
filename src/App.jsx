@@ -7,6 +7,9 @@ import Home from "./Home";
 import CartPage from "./CartPage";
 import CheckoutPage from "./CheckoutPage";
 import OrderSuccess from "./OrderSuccess";
+import Footer from "./Footer";
+import ScrollToTop from "./ScrollToTop";
+import TestProducts from "./TestProducts";
 
 import ScreenProtector from "./ScreenProtector";
 import ScreenProtectorDetail from "./ScreenProtectorDetail";
@@ -44,19 +47,21 @@ import ChargingCables from "./ChargingCables";
 import PremiumCoverDetail from "./PremiumCoverDetail";
 import PrintedCoverDetail from "./PrintedCoverDetail";
 import TransparentCoverDetails from "./TransparentCoverDetails";
-import MetalRingLeatherDetail from "./MetalRingLeatherDetail";
-import TechWovenDetail from "./TechWovenDetail";
-import FineWovenMagsafeDetail from "./FineWovenMagsafeDetail";
 import CrossbodyStrapDetail from "./CrossbodyStrapDetail";
+import FineWovenMagsafeDetail from "./FineWovenMagsafeDetail";
 import AndroidCoverDetail from "./AndroidCoverDetail";
-import BaseballKnitDetail from "./BaseballKnitDetail";
-import CarbonCoverDetail from "./CarbonCoverDetail";
-import LeatherCollectionMagsafeDetail from "./LeatherCollectionMagsafeDetail";
+import TechWovenDetail from "./TechWovenDetail";
 import LuxuryCoverDetail from "./LuxuryCoverDetail";
 import SiliconeCoverDetail from "./SiliconeCoverDetail";
+import LeatherCollectionMagsafeDetail from "./LeatherCollectionMagsafeDetail";
+import CarbonCoverDetail from "./CarbonCoverDetail";
+import BaseballKnitDetail from "./BaseballKnitDetail";
+import MetalRingLeatherDetail from "./MetalRingLeatherDetail";
+
 import WatchStrapDetail from "./WatchStrapDetail";
 import WatchCaseDetail from "./WatchCaseDetail";
 import WatchChargerDetail from "./WatchChargerDetail";
+
 import PowerBankDetail from "./PowerBankDetail";
 import CarAccessoryDetail from "./CarAccessoryDetail";
 import AdapterDetail from "./AdapterDetail";
@@ -64,22 +69,25 @@ import LaptopAccessoryDetail from "./LaptopAccessoryDetail";
 import TravelAccessoryDetail from "./TravelAccessoryDetail";
 import ChargingCableDetail from "./ChargingCableDetail";
 import WirelessAccessoryDetail from "./WirelessAccessoryDetail";
-import Footer from "./Footer";
-import ScrollToTop from "./ScrollToTop";
-import TestProducts from "./TestProducts";
+import TrackOrder from "./TrackOrder";
+
 function App() {
   return (
     <Router>
+      <ScrollToTop />
       <Navbar />
-     <ScrollToTop />
+
       <Routes>
         {/* HOME */}
         <Route path="/" element={<Home />} />
 
-        {/* CART + CHECKOUT */}
+        {/* CART + CHECKOUT + ORDER SUCCESS */}
         <Route path="/cart" element={<CartPage />} />
         <Route path="/checkout" element={<CheckoutPage />} />
         <Route path="/order-success" element={<OrderSuccess />} />
+
+        {/* TEST */}
+        <Route path="/test-products" element={<TestProducts />} />
 
         {/* SCREEN PROTECTORS */}
         <Route path="/screen-protectors" element={<ScreenProtector />} />
@@ -152,12 +160,21 @@ function App() {
           path="/wireless-accessories"
           element={<WirelessAccessories />}
         />
-        <Route path="/laptop-accessories" element={<LaptopAccessories />} />
-        <Route path="/travel-accessories" element={<TravelAccessories />} />
+        <Route
+          path="/laptop-accessories"
+          element={<LaptopAccessories />}
+        />
+        <Route
+          path="/travel-accessories"
+          element={<TravelAccessories />}
+        />
         <Route path="/charging-cables" element={<ChargingCables />} />
 
         <Route path="/power-bank/:id" element={<PowerBankDetail />} />
-        <Route path="/car-accessories/:id" element={<CarAccessoryDetail />} />
+        <Route
+          path="/car-accessories/:id"
+          element={<CarAccessoryDetail />}
+        />
         <Route path="/adapters/:id" element={<AdapterDetail />} />
         <Route
           path="/laptop-accessories/:id"
@@ -174,10 +191,10 @@ function App() {
         <Route
           path="/wireless-accessories/:id"
           element={<WirelessAccessoryDetail />}
-          
         />
-        <Route path="/test-products" element={<TestProducts />} />
+        <Route path="/track-order" element={<TrackOrder />} />
       </Routes>
+
       <Footer />
     </Router>
   );

@@ -19,6 +19,8 @@ const CheckoutPage = () => {
     paymentMethod: "COD",
   });
 
+  const [loading, setLoading] = useState(false);
+
   const handleChange = (e) => {
     setFormData((prev) => ({
       ...prev,
@@ -26,9 +28,7 @@ const CheckoutPage = () => {
     }));
   };
 
-  const handlePlaceOrder = (e) => {
-    e.preventDefault();
-
+  const validateForm = () => {
     if (
       !formData.fullName ||
       !formData.phone ||
@@ -38,25 +38,153 @@ const CheckoutPage = () => {
       !formData.pincode
     ) {
       alert("Please fill all fields");
-      return;
+      return false;
     }
 
     if (!buyNowItem) {
       alert("No product selected for order.");
-      return;
+      return false;
     }
 
+    return true;
+  };
+
+  const saveLocalOrderAndRedirect = (extra = {}) => {
     const orderData = {
       orderId: `SC${Date.now()}`,
       customer: formData,
       item: buyNowItem,
       total: buyNowItem.price * (buyNowItem.quantity || 1),
       createdAt: new Date().toISOString(),
+      ...extra,
     };
 
     localStorage.setItem("snapcharge_last_order", JSON.stringify(orderData));
     localStorage.removeItem("snapcharge_buy_now");
     navigate("/order-success");
+  };
+
+  const handleCODOrder = () => {
+    saveLocalOrderAndRedirect({
+      paymentStatus: "COD_PENDING",
+      paymentMethod: "COD",
+    });
+  };
+
+  const handleOnlinePayment = async () => {
+    try {
+      setLoading(true);
+
+      const amount = buyNowItem.price * (buyNowItem.quantity || 1);
+
+      const payload = {
+        customerName: formData.fullName,
+        phone: formData.phone,
+        address: `${formData.address}, ${formData.city}, ${formData.state} - ${formData.pincode}`,
+        city: formData.city,
+        state: formData.state,
+        pincode: formData.pincode,
+        productName: buyNowItem.name,
+        productId: buyNowItem.id || buyNowItem._id || "",
+        variant: buyNowItem.variant || buyNowItem.selectedVariant || "Default",
+        quantity: buyNowItem.quantity || 1,
+        amount,
+      };
+
+      const orderRes = await fetch("http://localhost:5000/api/payment/create-order", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const orderData = await orderRes.json();
+
+      if (!orderData.success) {
+        alert(orderData.message || "Failed to create payment order");
+        setLoading(false);
+        return;
+      }
+
+      const options = {
+        key: orderData.key,
+        amount: orderData.amount,
+        currency: orderData.currency,
+        name: "SnapCharge",
+        description: buyNowItem.name,
+        order_id: orderData.razorpayOrderId,
+        handler: async function (response) {
+          try {
+            const verifyRes = await fetch("http://localhost:5000/api/payment/verify-payment", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                dbOrderId: orderData.dbOrderId,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+              }),
+            });
+
+            const verifyData = await verifyRes.json();
+
+            if (verifyData.success) {
+              saveLocalOrderAndRedirect({
+                paymentStatus: "PAID",
+                paymentMethod: "ONLINE",
+                razorpayOrderId: response.razorpay_order_id,
+                razorpayPaymentId: response.razorpay_payment_id,
+              });
+            } else {
+              alert("Payment verification failed");
+            }
+          } catch (error) {
+            console.log("Verification error:", error);
+            alert("Payment verification failed");
+          } finally {
+            setLoading(false);
+          }
+        },
+        prefill: {
+          name: formData.fullName,
+          contact: formData.phone,
+        },
+        notes: {
+          address: formData.address,
+          product: buyNowItem.name,
+        },
+        theme: {
+          color: "#9DC183",
+        },
+        modal: {
+          ondismiss: function () {
+            setLoading(false);
+          },
+        },
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+    } catch (error) {
+      console.log("Payment error:", error);
+      alert("Something went wrong while initiating payment");
+      setLoading(false);
+    }
+  };
+
+  const handlePlaceOrder = async (e) => {
+    e.preventDefault();
+
+    if (!validateForm()) return;
+
+    if (formData.paymentMethod === "COD") {
+      handleCODOrder();
+    } else {
+      await handleOnlinePayment();
+    }
   };
 
   if (!buyNowItem) {
@@ -85,7 +213,6 @@ const CheckoutPage = () => {
   return (
     <div className="min-h-screen bg-[#FAEBD7] pt-32 pb-16 px-4 sm:px-6">
       <div className="max-w-6xl mx-auto grid lg:grid-cols-[1.3fr,0.8fr] gap-8">
-        {/* LEFT FORM */}
         <div className="bg-white rounded-3xl shadow p-6 sm:p-8">
           <h1 className="text-3xl font-bold text-[#436056] mb-6">Checkout</h1>
 
@@ -178,14 +305,18 @@ const CheckoutPage = () => {
 
             <button
               type="submit"
-              className="w-full mt-4 bg-[#9DC183] text-white py-3 rounded-full font-semibold hover:bg-[#436056] transition"
+              disabled={loading}
+              className="w-full mt-4 bg-[#9DC183] text-white py-3 rounded-full font-semibold hover:bg-[#436056] transition disabled:opacity-60"
             >
-              Place Order
+              {loading
+                ? "Processing..."
+                : formData.paymentMethod === "Online"
+                ? `Pay Now ₹${total}`
+                : "Place Order"}
             </button>
           </form>
         </div>
 
-        {/* RIGHT SUMMARY */}
         <div className="bg-white rounded-3xl shadow p-6 h-fit">
           <h2 className="text-2xl font-bold text-[#436056] mb-5">
             Order Summary
@@ -206,6 +337,12 @@ const CheckoutPage = () => {
               {buyNowItem.subtitle && (
                 <p className="text-xs text-gray-500 mt-1">
                   {buyNowItem.subtitle}
+                </p>
+              )}
+
+              {buyNowItem.variant && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Variant: {buyNowItem.variant}
                 </p>
               )}
 

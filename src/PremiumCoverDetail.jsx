@@ -9,7 +9,11 @@ import ProductDetailLayout from "./ProductDetailLayout";
 const PremiumCoverDetail = () => {
   const params = useParams();
   const paramId =
-    params.id || params.productId || params.coverId || params.slug || Object.values(params)[0];
+    params.id ||
+    params.productId ||
+    params.coverId ||
+    params.slug ||
+    Object.values(params)[0];
 
   const product = getPremiumCoverById(paramId);
   const related = getRelatedPremiumCovers(paramId, 4);
@@ -50,6 +54,24 @@ const PremiumCoverDetail = () => {
         "Secure packaging to avoid transit damage",
         "Support for order, tracking & installation help",
       ]}
+      enableBookNow={true}
+      buildBuyNowData={(selected) => ({
+        id: product?.id || product?._id || "",
+        name: product?.name || "",
+        image:
+          selected?.selectedImage ||
+          selected?.images?.[selected?.activeImage || 0] ||
+          product?.images?.[0] ||
+          "",
+        price: selected?.selectedVariant?.price || product?.price || 0,
+        quantity: 1,
+        variant:
+          selected?.selectedVariant?.label ||
+          selected?.selectedVariant?.name ||
+          selected?.selectedColor ||
+          "Default",
+        subtitle: product?.details || "",
+      })}
     />
   );
 };

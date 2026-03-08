@@ -74,7 +74,11 @@ const ProductDetailLayout = ({
   }
 
   const finalDetails =
-    selectedVariant?.details || description || product.details || product.description || "";
+    selectedVariant?.details ||
+    description ||
+    product.details ||
+    product.description ||
+    "";
 
   const finalSpecs =
     selectedVariant?.specs?.length ? selectedVariant.specs : specs || [];
@@ -82,36 +86,43 @@ const ProductDetailLayout = ({
   const shipping =
     deliveryReturn?.shipping ||
     "Free delivery on prepaid orders. Dispatch within 24-48 hours.";
+
   const returns =
-    deliveryReturn?.returns || "7-day replacement for manufacturing defects only.";
+    deliveryReturn?.returns ||
+    "7-day replacement for manufacturing defects only.";
+
   const care =
-    deliveryReturn?.care || "Clean gently with a soft microfiber cloth.";
+    deliveryReturn?.care ||
+    "Clean gently with a soft microfiber cloth.";
 
   const finalPrice = selectedVariant?.price ?? product.price ?? 0;
   const finalMrp = selectedVariant?.mrp ?? product.mrp ?? 0;
 
   const handleAddToCart = () => {
     addToCart({
-      id: `${product.id}-${selectedVariant?.label || "default"}`,
+      id: `${product.id || product._id}-${selectedVariant?.label || "default"}`,
       name: selectedVariant?.label
         ? `${title || product.name} (${selectedVariant.label})`
         : title || product.name,
       price: finalPrice,
-      image: selectedImage || product.image || product.images?.[0],
+      image: selectedImage || product.image || product.images?.[0] || "",
       subtitle: finalDetails,
+      quantity: 1,
+      variant: selectedVariant?.label || "Default",
     });
   };
 
   const handleBuyNow = () => {
     const buyNowItem = {
-      id: `${product.id}-${selectedVariant?.label || "default"}-buynow`,
+      id: `${product.id || product._id}-${selectedVariant?.label || "default"}-buynow`,
       name: selectedVariant?.label
         ? `${title || product.name} (${selectedVariant.label})`
         : title || product.name,
       price: finalPrice,
-      image: selectedImage || product.image || product.images?.[0],
+      image: selectedImage || product.image || product.images?.[0] || "",
       subtitle: finalDetails,
       quantity: 1,
+      variant: selectedVariant?.label || "Default",
     };
 
     localStorage.setItem("snapcharge_buy_now", JSON.stringify(buyNowItem));
@@ -179,8 +190,12 @@ const ProductDetailLayout = ({
           </h1>
 
           <div className="mt-3 flex flex-wrap items-baseline gap-3">
-            <span className="text-3xl font-bold text-[#2f4737]">₹{finalPrice}</span>
-            <span className="text-sm text-[#8b8b8b] line-through">₹{finalMrp}</span>
+            <span className="text-3xl font-bold text-[#2f4737]">
+              ₹{finalPrice}
+            </span>
+            <span className="text-sm text-[#8b8b8b] line-through">
+              ₹{finalMrp}
+            </span>
             <span className="text-[11px] text-[#9a9a9a]">
               MRP inclusive of all taxes
             </span>
@@ -188,7 +203,9 @@ const ProductDetailLayout = ({
 
           {colorOptions?.length > 0 && (
             <div className="mt-6">
-              <p className="text-sm font-semibold text-[#2f4737] mb-2">Color</p>
+              <p className="text-sm font-semibold text-[#2f4737] mb-2">
+                Color
+              </p>
               <div className="flex flex-wrap gap-3">
                 {colorOptions.map((color) => {
                   const active = color.targetId === product.id;
@@ -207,7 +224,9 @@ const ProductDetailLayout = ({
                         }`}
                         style={{ backgroundColor: color.swatch || color.code }}
                       />
-                      <span className="text-xs text-[#2f4737]">{color.name}</span>
+                      <span className="text-xs text-[#2f4737]">
+                        {color.name}
+                      </span>
                     </button>
                   );
                 })}

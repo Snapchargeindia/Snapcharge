@@ -1,8 +1,32 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 const OrderSuccess = () => {
-  const order = JSON.parse(localStorage.getItem("snapcharge_last_order"));
+  const navigate = useNavigate();
+  const order = JSON.parse(localStorage.getItem("snapcharge_last_order") || "null");
+
+  if (!order) {
+    return (
+      <div className="min-h-screen bg-[#FAEBD7] flex items-center justify-center px-4">
+        <div className="bg-white rounded-3xl shadow-xl p-8 sm:p-10 max-w-xl w-full text-center">
+          <h1 className="text-3xl font-bold text-[#436056] mb-3">
+            No recent order found
+          </h1>
+
+          <p className="text-gray-600 mb-6">
+            Please place an order first.
+          </p>
+
+          <button
+            onClick={() => navigate("/")}
+            className="bg-[#9DC183] text-white px-6 py-3 rounded-full font-semibold hover:bg-[#436056] transition"
+          >
+            Go to Home
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#FAEBD7] flex items-center justify-center px-4">
@@ -24,8 +48,20 @@ const OrderSuccess = () => {
         )}
 
         {order?.customer?.fullName && (
-          <p className="text-sm text-gray-600 mb-6">
+          <p className="text-sm text-gray-600 mb-2">
             Customer: {order.customer.fullName}
+          </p>
+        )}
+
+        {order?.paymentMethod && (
+          <p className="text-sm text-gray-600 mb-2">
+            Payment Method: {order.paymentMethod}
+          </p>
+        )}
+
+        {order?.paymentStatus && (
+          <p className="text-sm text-gray-600 mb-6">
+            Payment Status: {order.paymentStatus}
           </p>
         )}
 
