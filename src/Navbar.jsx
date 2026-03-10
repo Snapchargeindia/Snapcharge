@@ -1,6 +1,7 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useCart } from "./CartContext";
+import logo from "./assets/logo.png";
 
 const coverItems = [
   "Premium Covers",
@@ -31,7 +32,23 @@ const chargingItems = [
 const Navbar = () => {
   const [openMenu, setOpenMenu] = useState(null);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [loggedInUser, setLoggedInUser] = useState(null);
+
   const { cartCount } = useCart();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    const saved = localStorage.getItem("snapcharge_user");
+    setLoggedInUser(saved ? JSON.parse(saved) : null);
+  }, [location.pathname]);
+
+  const handleLogout = () => {
+    localStorage.removeItem("snapcharge_user");
+    localStorage.removeItem("snapcharge_token");
+    setLoggedInUser(null);
+    navigate("/login");
+  };
 
   const coverRoutes = {
     "Premium Covers": "/premium-covers",
@@ -68,15 +85,15 @@ const Navbar = () => {
       <div className="w-[92%] max-w-6xl">
         <header className="rounded-[26px] bg-[#FAEBD7]/95 backdrop-blur-md border-2 border-[#9DC183] shadow-[0_12px_40px_rgba(67,96,86,0.14)]">
           <div className="flex h-[70px] items-center px-4 sm:px-6">
-            <Link
-              to="/"
-              className="text-lg sm:text-xl font-extrabold tracking-wide text-[#436056]"
-            >
-              SNAP<span className="text-[#9DC183]">CHARGE</span>
+            <Link to="/" className="flex items-center">
+              <img
+                src={logo}
+                alt="SnapCharge"
+                className="h-10 sm:h-12 w-auto object-contain"
+              />
             </Link>
 
-            {/* DESKTOP */}
-            <nav className="ml-auto hidden md:flex items-center gap-8 text-[15px] font-medium">
+            <nav className="ml-auto hidden md:flex items-center gap-6 text-[15px] font-medium">
               <Dropdown
                 label="Charging Solutions"
                 items={chargingItems}
@@ -111,6 +128,31 @@ const Navbar = () => {
                 routes={watchRoutes}
               />
 
+              {loggedInUser ? (
+                <>
+                  <Link
+                    to="/my-orders"
+                    className="text-[#436056] hover:text-[#9DC183] transition font-semibold"
+                  >
+                    My Orders
+                  </Link>
+
+                  <button
+                    onClick={handleLogout}
+                    className="text-[#436056] hover:text-[#9DC183] transition font-semibold"
+                  >
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <Link
+                  to="/login"
+                  className="text-[#436056] hover:text-[#9DC183] transition font-semibold"
+                >
+                  Login
+                </Link>
+              )}
+
               <Link
                 to="/cart"
                 className="relative rounded-full border border-[#8eb072] bg-[#9DC183] px-5 py-2 text-white font-semibold hover:bg-[#436056] hover:border-[#436056] transition shadow-sm"
@@ -124,7 +166,6 @@ const Navbar = () => {
               </Link>
             </nav>
 
-            {/* MOBILE BUTTON */}
             <div className="ml-auto md:hidden flex items-center gap-3">
               <Link
                 to="/cart"
@@ -147,7 +188,6 @@ const Navbar = () => {
             </div>
           </div>
 
-          {/* MOBILE MENU */}
           {mobileOpen && (
             <div className="md:hidden border-t border-[#9DC183] bg-[#fffaf2] px-4 pb-4">
               <MobileSection
@@ -178,6 +218,36 @@ const Navbar = () => {
                 routes={watchRoutes}
                 setMobileOpen={setMobileOpen}
               />
+
+              {loggedInUser ? (
+                <>
+                  <Link
+                    to="/my-orders"
+                    onClick={() => setMobileOpen(false)}
+                    className="block py-2 text-[#436056] font-medium"
+                  >
+                    My Orders
+                  </Link>
+
+                  <button
+                    onClick={() => {
+                      handleLogout();
+                      setMobileOpen(false);
+                    }}
+                    className="block py-2 text-[#436056] font-medium"
+                  >
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <Link
+                  to="/login"
+                  onClick={() => setMobileOpen(false)}
+                  className="block py-2 text-[#436056] font-medium"
+                >
+                  Login
+                </Link>
+              )}
             </div>
           )}
         </header>

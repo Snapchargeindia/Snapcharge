@@ -1,10 +1,33 @@
-import React from "react";
-import { Link } from "react-router-dom";
+import React, { useMemo } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "./CartContext";
+import { requireUserLogin } from "./authGuard";
 
 const CartPage = () => {
+  const navigate = useNavigate();
+
   const { cartItems, removeFromCart, updateQuantity, cartTotal, clearCart } =
     useCart();
+
+  const isLoggedIn = useMemo(() => {
+    return !!localStorage.getItem("snapcharge_user");
+  }, []);
+
+  if (!isLoggedIn) {
+    requireUserLogin(navigate, "Please login first to view your cart");
+    return null;
+  }
+
+  const handleCheckout = () => {
+    const allowed = requireUserLogin(
+      navigate,
+      "Please login first to continue checkout"
+    );
+
+    if (!allowed) return;
+
+    navigate("/checkout");
+  };
 
   if (cartItems.length === 0) {
     return (
@@ -53,6 +76,12 @@ const CartPage = () => {
                   <p className="text-sm text-gray-500 mt-1">{item.subtitle}</p>
                 )}
 
+                {item.variant && (
+                  <p className="text-sm text-gray-500 mt-1">
+                    Variant: {item.variant}
+                  </p>
+                )}
+
                 <p className="text-gray-600 mt-1">₹{item.price}</p>
 
                 <div className="flex items-center justify-center sm:justify-start gap-3 mt-3">
@@ -89,12 +118,21 @@ const CartPage = () => {
             Total: ₹{cartTotal}
           </h2>
 
-          <button
-            onClick={clearCart}
-            className="px-5 py-2 border rounded-lg text-[#436056] hover:bg-gray-100 transition"
-          >
-            Clear Cart
-          </button>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <button
+              onClick={clearCart}
+              className="px-5 py-2 border rounded-lg text-[#436056] hover:bg-gray-100 transition"
+            >
+              Clear Cart
+            </button>
+
+            <button
+              onClick={handleCheckout}
+              className="bg-[#9DC183] text-white px-6 py-3 rounded-full font-semibold hover:bg-[#436056] transition"
+            >
+              Proceed to Checkout
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "./CartContext";
+import { requireUserLogin } from "./authGuard";
 
 const ProductDetailLayout = ({
   product,
@@ -99,6 +100,13 @@ const ProductDetailLayout = ({
   const finalMrp = selectedVariant?.mrp ?? product.mrp ?? 0;
 
   const handleAddToCart = () => {
+    const allowed = requireUserLogin(
+      navigate,
+      "Please login first to add items to cart"
+    );
+
+    if (!allowed) return;
+
     addToCart({
       id: `${product.id || product._id}-${selectedVariant?.label || "default"}`,
       name: selectedVariant?.label
@@ -113,6 +121,13 @@ const ProductDetailLayout = ({
   };
 
   const handleBuyNow = () => {
+    const allowed = requireUserLogin(
+      navigate,
+      "Please login first to continue with booking"
+    );
+
+    if (!allowed) return;
+
     const buyNowItem = {
       id: `${product.id || product._id}-${selectedVariant?.label || "default"}-buynow`,
       name: selectedVariant?.label
@@ -141,7 +156,6 @@ const ProductDetailLayout = ({
       </div>
 
       <div className="max-w-6xl mx-auto bg-[#f6ebdd] rounded-[32px] p-6 sm:p-8 flex flex-col lg:flex-row gap-8">
-        {/* LEFT */}
         <div className="flex-1">
           <div className="bg-white rounded-3xl flex items-center justify-center h-[320px] sm:h-[380px] mb-5">
             {selectedImage ? (
@@ -183,7 +197,6 @@ const ProductDetailLayout = ({
           </div>
         </div>
 
-        {/* RIGHT */}
         <div className="flex-1 flex flex-col">
           <h1 className="text-2xl sm:text-3xl font-bold text-[#2f4737] leading-snug">
             {title || product.name}
@@ -282,7 +295,6 @@ const ProductDetailLayout = ({
         </div>
       </div>
 
-      {/* TABS + WHY BUY */}
       <div className="max-w-6xl mx-auto mt-10 grid grid-cols-1 lg:grid-cols-[minmax(0,2fr)_320px] gap-6 items-start">
         <div className="min-w-0">
           <div className="flex flex-wrap gap-10 border-b border-[#e7d9c2] text-sm font-semibold text-[#9aa3b2]">
@@ -367,7 +379,6 @@ const ProductDetailLayout = ({
         </div>
       </div>
 
-      {/* RELATED */}
       {related.length > 0 && (
         <div className="max-w-6xl mx-auto mt-14">
           <h2 className="text-2xl font-bold text-[#2f5a4d] mb-6">

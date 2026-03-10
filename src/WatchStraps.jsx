@@ -3,6 +3,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { watchStrapProducts } from "./watchStrapData";
 import { useCart } from "./CartContext";
+import { requireUserLogin } from "./authGuard";
 
 const WatchStraps = () => {
   const navigate = useNavigate();
@@ -10,7 +11,6 @@ const WatchStraps = () => {
 
   return (
     <div className="min-h-screen bg-[#FAEBD7] pt-28 px-4 sm:px-8 lg:px-14 pb-16">
-      {/* BACK TO HOME BUTTON */}
       <div className="mb-6">
         <button
           onClick={() => navigate("/")}
@@ -83,12 +83,21 @@ const WatchStraps = () => {
               <button
                 onClick={(e) => {
                   e.stopPropagation();
+
+                  const allowed = requireUserLogin(
+                    navigate,
+                    "Please login first to add items to cart"
+                  );
+
+                  if (!allowed) return;
+
                   addToCart({
                     id: product.id,
                     name: product.name,
                     price: product.price,
                     image: product.images?.[0],
                     subtitle: product.details,
+                    quantity: 1,
                   });
                 }}
                 className="mt-3 w-full bg-[#7aa874] hover:bg-[#6b9a65] text-white text-sm font-medium py-2.5 rounded-full shadow-[0_4px_10px_rgba(122,168,116,0.35)] transition-colors duration-200"

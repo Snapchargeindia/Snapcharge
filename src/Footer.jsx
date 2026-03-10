@@ -194,8 +194,26 @@ const Footer = () => {
           <div>
             <h4 className="text-lg font-semibold">Contact</h4>
             <div className="mt-4 space-y-3 text-white/70 leading-7">
-              <p>Phone: +91 00000 00000</p>
-              <p>Email: hello@snapcharge.com</p>
+              <p>
+                Phone:{" "}
+                <a
+                  href="tel:+917817888055"
+                  className="hover:text-[#9DC183] transition"
+                >
+                  +91 7817888055
+                </a>
+              </p>
+
+              <p>
+                Email:{" "}
+                <a
+                  href="mailto:snapchargeindia@gmail.com"
+                  className="hover:text-[#9DC183] transition"
+                >
+                  snapchargeindia@gmail.com
+                </a>
+              </p>
+
               <p>Mon - Sat | 10:00 AM - 8:00 PM</p>
             </div>
           </div>

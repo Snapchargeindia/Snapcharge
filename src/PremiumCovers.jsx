@@ -2,6 +2,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { premiumCoverProducts } from "./premiumCoverData";
 import { useCart } from "./CartContext";
+import { requireUserLogin } from "./authGuard";
 
 const PremiumCovers = () => {
   const navigate = useNavigate();
@@ -9,8 +10,6 @@ const PremiumCovers = () => {
 
   return (
     <div className="min-h-screen bg-[#FAEBD7] pt-28 px-4 sm:px-8 lg:px-14 pb-16">
-
-      {/* BACK TO HOME BUTTON */}
       <div className="mb-6">
         <button
           onClick={() => navigate("/")}
@@ -23,7 +22,6 @@ const PremiumCovers = () => {
         </button>
       </div>
 
-      {/* HEADER */}
       <div className="flex justify-between items-center mb-10">
         <h1 className="text-3xl font-bold tracking-[0.15em] uppercase text-[#3f5c4a]">
           Premium Covers
@@ -33,7 +31,6 @@ const PremiumCovers = () => {
         </p>
       </div>
 
-      {/* GRID */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
         {premiumCoverProducts.map((product) => (
           <div
@@ -47,8 +44,6 @@ const PremiumCovers = () => {
             transition-all duration-300
             overflow-hidden flex flex-col"
           >
-
-            {/* IMAGE */}
             <div className="bg-white px-6 pt-6 pb-4 flex-1 flex items-center justify-center">
               <img
                 src={product.images?.[0]}
@@ -58,9 +53,7 @@ const PremiumCovers = () => {
               />
             </div>
 
-            {/* CONTENT */}
             <div className="px-6 pb-6 pt-3 flex flex-col gap-3">
-
               <div>
                 <h2 className="text-[15px] font-semibold text-[#3f5c4a] leading-snug mb-1 line-clamp-2">
                   {product.name}
@@ -71,7 +64,6 @@ const PremiumCovers = () => {
                 </p>
               </div>
 
-              {/* PRICE */}
               <div className="mt-2 flex items-baseline gap-2">
                 <span className="text-lg font-bold text-[#2f4f3e]">
                   ₹{product.price}
@@ -81,10 +73,16 @@ const PremiumCovers = () => {
                 </span>
               </div>
 
-              {/* ADD TO CART */}
               <button
                 onClick={(e) => {
                   e.stopPropagation();
+
+                  const allowed = requireUserLogin(
+                    navigate,
+                    "Please login first to add items to cart"
+                  );
+
+                  if (!allowed) return;
 
                   addToCart({
                     id: product.id,
@@ -92,6 +90,7 @@ const PremiumCovers = () => {
                     price: product.price,
                     image: product.images?.[0],
                     subtitle: product.details,
+                    quantity: 1,
                   });
                 }}
                 className="mt-3 w-full bg-[#7aa874] hover:bg-[#6b9a65]
@@ -102,12 +101,10 @@ const PremiumCovers = () => {
               >
                 Add to Cart
               </button>
-
             </div>
           </div>
         ))}
       </div>
-
     </div>
   );
 };

@@ -1,7 +1,10 @@
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-const API_URL = "https://snapcharge.onrender.com";
+const API_URL =
+  window.location.hostname === "localhost"
+    ? "http://localhost:5000"
+    : "https://snapcharge.onrender.com";
 
 const CheckoutPage = () => {
   const navigate = useNavigate();
@@ -11,9 +14,16 @@ const CheckoutPage = () => {
     return saved ? JSON.parse(saved) : null;
   }, []);
 
+  const loggedInUser = useMemo(() => {
+    const savedUser = localStorage.getItem("snapcharge_user");
+    return savedUser ? JSON.parse(savedUser) : null;
+  }, []);
+
   const [formData, setFormData] = useState({
-    fullName: "",
-    phone: "",
+    fullName: loggedInUser?.name || "",
+    phone: loggedInUser?.phone
+      ? String(loggedInUser.phone).replace(/^\+91/, "")
+      : "",
     address: "",
     city: "",
     state: "",
@@ -24,9 +34,19 @@ const CheckoutPage = () => {
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
+    let { name, value } = e.target;
+
+    if (name === "phone") {
+      value = value.replace(/\D/g, "").slice(0, 10);
+    }
+
+    if (name === "pincode") {
+      value = value.replace(/\D/g, "").slice(0, 6);
+    }
+
     setFormData((prev) => ({
       ...prev,
-      [e.target.name]: e.target.value,
+      [name]: value,
     }));
   };
 
@@ -40,6 +60,18 @@ const CheckoutPage = () => {
       !formData.pincode
     ) {
       alert("Please fill all fields");
+      return false;
+    }
+
+    if (!/^[6-9]\d{9}$/.test(formData.phone.trim())) {
+      alert("Please enter a valid Indian phone number");
+      return false;
+    }
+
+    if (!/^\d{6}$/.test(formData.pincode.trim())) {
+      alert(
+        "We currently deliver only within India. Please enter a valid 6-digit pincode."
+      );
       return false;
     }
 
@@ -66,11 +98,54 @@ const CheckoutPage = () => {
     navigate("/order-success");
   };
 
-  const handleCODOrder = () => {
-    saveLocalOrderAndRedirect({
-      paymentStatus: "COD_PENDING",
-      paymentMethod: "COD",
-    });
+  const handleCODOrder = async () => {
+    try {
+      setLoading(true);
+
+      const amount = buyNowItem.price * (buyNowItem.quantity || 1);
+
+      const payload = {
+        userId: loggedInUser?._id || null,
+        customerName: formData.fullName,
+        phone: formData.phone,
+        address: `${formData.address}, ${formData.city}, ${formData.state} - ${formData.pincode}`,
+        city: formData.city,
+        state: formData.state,
+        pincode: formData.pincode,
+        productName: buyNowItem.name,
+        productId: buyNowItem.id || buyNowItem._id || "",
+        productImage: buyNowItem.image || "",
+        variant: buyNowItem.variant || buyNowItem.selectedVariant || "Default",
+        quantity: buyNowItem.quantity || 1,
+        amount,
+      };
+
+      const res = await fetch(`${API_URL}/api/payment/create-cod-order`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        alert(data.message || "Failed to place COD order");
+        return;
+      }
+
+      saveLocalOrderAndRedirect({
+        paymentStatus: "COD_PENDING",
+        paymentMethod: "COD",
+        dbOrderId: data.order?._id,
+      });
+    } catch (error) {
+      console.log("COD order error:", error);
+      alert("Something went wrong while placing COD order");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleOnlinePayment = async () => {
@@ -80,6 +155,7 @@ const CheckoutPage = () => {
       const amount = buyNowItem.price * (buyNowItem.quantity || 1);
 
       const payload = {
+        userId: loggedInUser?._id || null,
         customerName: formData.fullName,
         phone: formData.phone,
         address: `${formData.address}, ${formData.city}, ${formData.state} - ${formData.pincode}`,
@@ -88,6 +164,7 @@ const CheckoutPage = () => {
         pincode: formData.pincode,
         productName: buyNowItem.name,
         productId: buyNowItem.id || buyNowItem._id || "",
+        productImage: buyNowItem.image || "",
         variant: buyNowItem.variant || buyNowItem.selectedVariant || "Default",
         quantity: buyNowItem.quantity || 1,
         amount,
@@ -103,7 +180,7 @@ const CheckoutPage = () => {
 
       const orderData = await orderRes.json();
 
-      if (!orderData.success) {
+      if (!orderRes.ok || !orderData.success) {
         alert(orderData.message || "Failed to create payment order");
         setLoading(false);
         return;
@@ -118,22 +195,25 @@ const CheckoutPage = () => {
         order_id: orderData.razorpayOrderId,
         handler: async function (response) {
           try {
-            const verifyRes = await fetch(`${API_URL}/api/payment/verify-payment`, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                dbOrderId: orderData.dbOrderId,
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature,
-              }),
-            });
+            const verifyRes = await fetch(
+              `${API_URL}/api/payment/verify-payment`,
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  dbOrderId: orderData.dbOrderId,
+                  razorpay_order_id: response.razorpay_order_id,
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_signature: response.razorpay_signature,
+                }),
+              }
+            );
 
             const verifyData = await verifyRes.json();
 
-            if (verifyData.success) {
+            if (verifyRes.ok && verifyData.success) {
               saveLocalOrderAndRedirect({
                 paymentStatus: "PAID",
                 paymentMethod: "ONLINE",
@@ -141,7 +221,7 @@ const CheckoutPage = () => {
                 razorpayPaymentId: response.razorpay_payment_id,
               });
             } else {
-              alert("Payment verification failed");
+              alert(verifyData.message || "Payment verification failed");
             }
           } catch (error) {
             console.log("Verification error:", error);
@@ -157,6 +237,7 @@ const CheckoutPage = () => {
         notes: {
           address: formData.address,
           product: buyNowItem.name,
+          country: "India",
         },
         theme: {
           color: "#9DC183",
@@ -183,7 +264,7 @@ const CheckoutPage = () => {
     if (!validateForm()) return;
 
     if (formData.paymentMethod === "COD") {
-      handleCODOrder();
+      await handleCODOrder();
     } else {
       await handleOnlinePayment();
     }
@@ -216,7 +297,10 @@ const CheckoutPage = () => {
     <div className="min-h-screen bg-[#FAEBD7] pt-32 pb-16 px-4 sm:px-6">
       <div className="max-w-6xl mx-auto grid lg:grid-cols-[1.3fr,0.8fr] gap-8">
         <div className="bg-white rounded-3xl shadow p-6 sm:p-8">
-          <h1 className="text-3xl font-bold text-[#436056] mb-6">Checkout</h1>
+          <h1 className="text-3xl font-bold text-[#436056] mb-2">Checkout</h1>
+          <p className="text-sm text-[#436056] mb-6">
+            We currently deliver only within India.
+          </p>
 
           <form onSubmit={handlePlaceOrder} className="space-y-4">
             <input
@@ -234,6 +318,7 @@ const CheckoutPage = () => {
               placeholder="Phone Number"
               value={formData.phone}
               onChange={handleChange}
+              maxLength={10}
               className="w-full border border-[#ddd] rounded-xl px-4 py-3 outline-none focus:border-[#9DC183]"
             />
 
@@ -272,7 +357,15 @@ const CheckoutPage = () => {
               placeholder="Pincode"
               value={formData.pincode}
               onChange={handleChange}
+              maxLength={6}
               className="w-full border border-[#ddd] rounded-xl px-4 py-3 outline-none focus:border-[#9DC183]"
+            />
+
+            <input
+              type="text"
+              value="India"
+              disabled
+              className="w-full border border-[#ddd] rounded-xl px-4 py-3 bg-gray-100 text-gray-500"
             />
 
             <div>
@@ -311,7 +404,7 @@ const CheckoutPage = () => {
               className="w-full mt-4 bg-[#9DC183] text-white py-3 rounded-full font-semibold hover:bg-[#436056] transition disabled:opacity-60"
             >
               {loading
-                ? "Processing..."
+                ? "Please wait..."
                 : formData.paymentMethod === "Online"
                 ? `Pay Now ₹${total}`
                 : "Place Order"}

@@ -3,6 +3,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { printedCoverProducts } from "./printedCoverData";
 import { useCart } from "./CartContext";
+import { requireUserLogin } from "./authGuard";
 
 const PrintedCovers = () => {
   const navigate = useNavigate();
@@ -10,7 +11,6 @@ const PrintedCovers = () => {
 
   return (
     <div className="min-h-screen bg-[#FAEBD7] pt-28 px-4 sm:px-8 lg:px-14 pb-16">
-      {/* BACK TO HOME BUTTON */}
       <div className="mb-6">
         <button
           onClick={() => navigate("/")}
@@ -102,12 +102,20 @@ const PrintedCovers = () => {
                   onClick={(e) => {
                     e.stopPropagation();
 
+                    const allowed = requireUserLogin(
+                      navigate,
+                      "Please login first to add items to cart"
+                    );
+
+                    if (!allowed) return;
+
                     addToCart({
                       id: product.id,
                       name: product.name,
                       price: cardPrice,
                       image: cardImg,
                       subtitle: product.details,
+                      quantity: 1,
                     });
                   }}
                   className="mt-3 w-full bg-[#7aa874]

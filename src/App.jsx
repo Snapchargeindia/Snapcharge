@@ -14,7 +14,6 @@ import TestProducts from "./TestProducts";
 import ScreenProtector from "./ScreenProtector";
 import ScreenProtectorDetail from "./ScreenProtectorDetail";
 
-// COVERS
 import PremiumCovers from "./PremiumCovers";
 import PrintedCovers from "./PrintedCovers";
 import TransparentCovers from "./TransparentCovers";
@@ -29,12 +28,10 @@ import CarbonCovers from "./CarbonCovers";
 import BaseballKnit from "./BaseballKnit";
 import MetalRingLeather from "./MetalRingLeather";
 
-// WATCH
 import WatchStraps from "./WatchStraps";
 import WatchCases from "./WatchCases";
 import WatchChargers from "./WatchChargers";
 
-// CHARGING
 import PowerBank from "./PowerBank";
 import CarAccessories from "./CarAccessories";
 import AdaptersPage from "./AdaptersPage";
@@ -43,7 +40,6 @@ import LaptopAccessories from "./LaptopAccessories";
 import TravelAccessories from "./TravelAccessories";
 import ChargingCables from "./ChargingCables";
 
-// DETAIL PAGES
 import PremiumCoverDetail from "./PremiumCoverDetail";
 import PrintedCoverDetail from "./PrintedCoverDetail";
 import TransparentCoverDetails from "./TransparentCoverDetails";
@@ -69,7 +65,16 @@ import LaptopAccessoryDetail from "./LaptopAccessoryDetail";
 import TravelAccessoryDetail from "./TravelAccessoryDetail";
 import ChargingCableDetail from "./ChargingCableDetail";
 import WirelessAccessoryDetail from "./WirelessAccessoryDetail";
+
 import TrackOrder from "./TrackOrder";
+import AdminPanel from "./AdminPanel";
+import AdminLogin from "./AdminLogin";
+import AdminProtectedRoute from "./AdminProtectedRoute";
+
+import Login from "./Login";
+import Signup from "./Signup";
+import MyOrders from "./MyOrders";
+import MyOrderDetail from "./MyOrderDetail";
 
 function App() {
   return (
@@ -78,25 +83,25 @@ function App() {
       <Navbar />
 
       <Routes>
-        {/* HOME */}
         <Route path="/" element={<Home />} />
 
-        {/* CART + CHECKOUT + ORDER SUCCESS */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
+        <Route path="/my-orders" element={<MyOrders />} />
+        <Route path="/my-orders/:id" element={<MyOrderDetail />} />
+
         <Route path="/cart" element={<CartPage />} />
         <Route path="/checkout" element={<CheckoutPage />} />
         <Route path="/order-success" element={<OrderSuccess />} />
 
-        {/* TEST */}
         <Route path="/test-products" element={<TestProducts />} />
 
-        {/* SCREEN PROTECTORS */}
         <Route path="/screen-protectors" element={<ScreenProtector />} />
         <Route
           path="/screen-protectors/:id"
           element={<ScreenProtectorDetail />}
         />
 
-        {/* COVERS */}
         <Route path="/premium-covers" element={<PremiumCovers />} />
         <Route path="/printed-covers" element={<PrintedCovers />} />
         <Route path="/transparent-covers" element={<TransparentCovers />} />
@@ -114,7 +119,6 @@ function App() {
         <Route path="/baseball-knit" element={<BaseballKnit />} />
         <Route path="/metal-ring-leather" element={<MetalRingLeather />} />
 
-        {/* COVER DETAILS */}
         <Route path="/premium-covers/:slug" element={<PremiumCoverDetail />} />
         <Route path="/printed-covers/:id" element={<PrintedCoverDetail />} />
         <Route
@@ -144,7 +148,6 @@ function App() {
           element={<MetalRingLeatherDetail />}
         />
 
-        {/* WATCH */}
         <Route path="/watch-straps" element={<WatchStraps />} />
         <Route path="/watch-cases" element={<WatchCases />} />
         <Route path="/watch-chargers" element={<WatchChargers />} />
@@ -152,7 +155,6 @@ function App() {
         <Route path="/watch-cases/:id" element={<WatchCaseDetail />} />
         <Route path="/watch-chargers/:id" element={<WatchChargerDetail />} />
 
-        {/* CHARGING */}
         <Route path="/power-bank" element={<PowerBank />} />
         <Route path="/car-accessories" element={<CarAccessories />} />
         <Route path="/adapters" element={<AdaptersPage />} />
@@ -160,14 +162,8 @@ function App() {
           path="/wireless-accessories"
           element={<WirelessAccessories />}
         />
-        <Route
-          path="/laptop-accessories"
-          element={<LaptopAccessories />}
-        />
-        <Route
-          path="/travel-accessories"
-          element={<TravelAccessories />}
-        />
+        <Route path="/laptop-accessories" element={<LaptopAccessories />} />
+        <Route path="/travel-accessories" element={<TravelAccessories />} />
         <Route path="/charging-cables" element={<ChargingCables />} />
 
         <Route path="/power-bank/:id" element={<PowerBankDetail />} />
@@ -192,7 +188,17 @@ function App() {
           path="/wireless-accessories/:id"
           element={<WirelessAccessoryDetail />}
         />
+
         <Route path="/track-order" element={<TrackOrder />} />
+        <Route path="/admin-login" element={<AdminLogin />} />
+        <Route
+          path="/admin"
+          element={
+            <AdminProtectedRoute>
+              <AdminPanel />
+            </AdminProtectedRoute>
+          }
+        />
       </Routes>
 
       <Footer />

@@ -1,113 +1,117 @@
-import React from "react";
-import { Link, useNavigate } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const OrderSuccess = () => {
   const navigate = useNavigate();
-  const order = JSON.parse(localStorage.getItem("snapcharge_last_order") || "null");
+  const [order, setOrder] = useState(null);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("snapcharge_last_order");
+    if (saved) {
+      setOrder(JSON.parse(saved));
+    }
+
+    // 🔔 Notification
+    if ("Notification" in window) {
+      if (Notification.permission === "granted") {
+        new Notification("Order Placed 🎉", {
+          body: "Your SnapCharge order was placed successfully.",
+        });
+      } else if (Notification.permission !== "denied") {
+        Notification.requestPermission();
+      }
+    }
+  }, []);
 
   if (!order) {
     return (
-      <div className="min-h-screen bg-[#FAEBD7] flex items-center justify-center px-4">
-        <div className="bg-white rounded-3xl shadow-xl p-8 sm:p-10 max-w-xl w-full text-center">
-          <h1 className="text-3xl font-bold text-[#436056] mb-3">
-            No recent order found
-          </h1>
-
-          <p className="text-gray-600 mb-6">
-            Please place an order first.
-          </p>
-
-          <button
-            onClick={() => navigate("/")}
-            className="bg-[#9DC183] text-white px-6 py-3 rounded-full font-semibold hover:bg-[#436056] transition"
-          >
-            Go to Home
-          </button>
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-[#FAEBD7]">
+        <p className="text-lg text-[#436056]">No order found.</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#FAEBD7] flex items-center justify-center px-4">
-      <div className="bg-white rounded-3xl shadow-xl p-8 sm:p-10 max-w-xl w-full text-center">
-        <div className="text-5xl mb-4">✅</div>
+    <div className="min-h-screen bg-[#FAEBD7] flex items-center justify-center pt-40 pb-20 px-4">
+      <div className="bg-white max-w-xl w-full rounded-3xl shadow-lg p-8 text-center">
 
-        <h1 className="text-3xl font-bold text-[#436056] mb-3">
-          Order Placed Successfully
-        </h1>
-
-        <p className="text-gray-600 mb-4">
-          Thank you for shopping with SnapCharge.
-        </p>
-
-        {order?.orderId && (
-          <p className="text-sm text-[#436056] mb-2">
-            Order ID: <span className="font-bold">{order.orderId}</span>
-          </p>
-        )}
-
-        {order?.customer?.fullName && (
-          <p className="text-sm text-gray-600 mb-2">
-            Customer: {order.customer.fullName}
-          </p>
-        )}
-
-        {order?.paymentMethod && (
-          <p className="text-sm text-gray-600 mb-2">
-            Payment Method: {order.paymentMethod}
-          </p>
-        )}
-
-        {order?.paymentStatus && (
-          <p className="text-sm text-gray-600 mb-6">
-            Payment Status: {order.paymentStatus}
-          </p>
-        )}
-
-        <div className="bg-[#f8f8f8] rounded-2xl p-4 text-left mb-6">
-          <p className="text-sm font-semibold text-[#436056] mb-2">
-            Ordered Item
-          </p>
-
-          <div className="flex gap-3 items-center">
-            <img
-              src={order?.item?.image}
-              alt={order?.item?.name}
-              className="w-16 h-16 object-contain rounded-lg bg-white"
-            />
-
-            <div>
-              <p className="font-medium text-[#436056] text-sm">
-                {order?.item?.name}
-              </p>
-
-              <p className="text-xs text-gray-500">
-                ₹{order?.item?.price} × {order?.item?.quantity || 1}
-              </p>
-
-              <p className="text-sm font-semibold text-[#436056] mt-1">
-                Total: ₹{order?.total}
-              </p>
-            </div>
+        {/* SUCCESS ICON */}
+        <div className="flex justify-center mb-4">
+          <div className="bg-green-100 w-16 h-16 flex items-center justify-center rounded-full text-3xl">
+            ✅
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <Link
-            to="/"
+        {/* TITLE */}
+        <h1 className="text-3xl font-bold text-[#436056] mb-2">
+          Order Placed Successfully
+        </h1>
+
+        <p className="text-gray-500 mb-4">
+          Thank you for shopping with SnapCharge
+        </p>
+
+        {/* ORDER INFO */}
+        <div className="text-sm text-gray-600 space-y-1 mb-6">
+          <p>
+            <span className="font-semibold">Order ID:</span>{" "}
+            {order.orderId}
+          </p>
+
+          <p>
+            <span className="font-semibold">Payment Method:</span>{" "}
+            {order.paymentMethod}
+          </p>
+
+          <p>
+            <span className="font-semibold">Payment Status:</span>{" "}
+            {order.paymentStatus}
+          </p>
+        </div>
+
+        {/* PRODUCT */}
+        <div className="border rounded-xl p-4 flex gap-4 items-center mb-6 bg-[#fafafa]">
+
+          <img
+            src={order.item.image}
+            alt={order.item.name}
+            className="w-16 h-16 object-contain"
+          />
+
+          <div className="text-left flex-1">
+            <p className="font-semibold text-[#436056]">
+              {order.item.name}
+            </p>
+
+            <p className="text-sm text-gray-500">
+              Qty: {order.item.quantity || 1}
+            </p>
+
+            <p className="text-[#436056] font-bold">
+              ₹{order.total}
+            </p>
+          </div>
+        </div>
+
+        {/* BUTTONS */}
+        <div className="flex gap-4 justify-center">
+
+          <button
+            onClick={() => navigate("/")}
             className="bg-[#9DC183] text-white px-6 py-3 rounded-full font-semibold hover:bg-[#436056] transition"
           >
             Continue Shopping
-          </Link>
+          </button>
 
-          <Link
-            to="/cart"
-            className="border border-[#9DC183] text-[#436056] px-6 py-3 rounded-full font-semibold hover:bg-[#9DC183] hover:text-white transition"
+          <button
+            onClick={() => navigate("/cart")}
+            className="border border-[#436056] text-[#436056] px-6 py-3 rounded-full font-semibold hover:bg-[#f5f5f5] transition"
           >
             View Cart
-          </Link>
+          </button>
+
         </div>
+
       </div>
     </div>
   );

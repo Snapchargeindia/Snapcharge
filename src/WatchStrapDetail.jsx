@@ -6,6 +6,7 @@ import {
   getRelatedWatchStraps,
 } from "./watchStrapData";
 import { useCart } from "./CartContext";
+import { requireUserLogin } from "./authGuard";
 
 const WatchStrapDetail = () => {
   const params = useParams();
@@ -69,6 +70,13 @@ const WatchStrapDetail = () => {
   const delivery = product.deliveryReturn || {};
 
   const handleAddToCart = () => {
+    const allowed = requireUserLogin(
+      navigate,
+      "Please login first to add items to cart"
+    );
+
+    if (!allowed) return;
+
     addToCart({
       id: `${product.id}-${selectedVariant.label}`,
       name: `${product.name} (${selectedVariant.label})`,
@@ -81,6 +89,13 @@ const WatchStrapDetail = () => {
   };
 
   const handleBookNow = () => {
+    const allowed = requireUserLogin(
+      navigate,
+      "Please login first to continue with booking"
+    );
+
+    if (!allowed) return;
+
     const buyNowItem = {
       id: `${product.id}-${selectedVariant.label}`,
       name: `${product.name} (${selectedVariant.label})`,

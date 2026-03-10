@@ -1115,6 +1115,110 @@ const Home = () => {
           </motion.div>
         </motion.div>
       </motion.section>
+      {/* ================= TERMS / WARRANTY ================= */}
+<motion.section
+  className="w-[94%] max-w-7xl mx-auto mt-24"
+  initial="hidden"
+  whileInView="show"
+  viewport={{ once: false, amount: 0.2 }}
+  variants={riseUp}
+>
+  <div className="rounded-[34px] bg-white border border-[#eadccc] shadow-[0_20px_55px_rgba(0,0,0,0.06)] overflow-hidden">
+
+    <div className="grid md:grid-cols-3">
+
+      {/* LEFT SIDE */}
+      <motion.div
+        variants={riseLeft}
+        className="bg-[#436056] text-white px-6 py-8 md:px-8"
+      >
+        <p className="text-[11px] sm:text-xs font-semibold tracking-[0.25em] uppercase text-white/75">
+          SnapCharge Policy
+        </p>
+
+        <h2 className="mt-3 text-2xl md:text-3xl font-bold leading-tight">
+          7 Days Replacement
+          <br />
+          Warranty
+        </h2>
+
+        <p className="mt-4 text-sm md:text-base leading-7 text-white/85">
+          We stand behind the quality of our products and offer an easy
+          replacement process for eligible issues.
+        </p>
+      </motion.div>
+
+      {/* RIGHT SIDE */}
+      <motion.div
+        variants={riseRight}
+        className="md:col-span-2 px-6 py-8 md:px-8 bg-[#fffaf2]"
+      >
+
+        <motion.div
+          variants={cardStagger}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: false, amount: 0.2 }}
+          className="grid sm:grid-cols-2 gap-6"
+        >
+
+          <motion.div
+            variants={zoomRise}
+            whileHover={{ y: -8, scale: 1.03 }}
+            transition={{ type: "spring", stiffness: 180, damping: 16 }}
+            className="rounded-[24px] bg-white border border-[#efe3d3] p-5 shadow-sm"
+          >
+            <h3 className="text-lg font-semibold text-[#2f3e38]">
+              Replacement Coverage
+            </h3>
+
+            <p className="mt-3 text-sm md:text-base leading-7 text-[#46524d]">
+              Customers can request a replacement within
+              <span className="font-semibold text-[#436056]">
+                {" "}7 days of delivery
+              </span>{" "}
+              in case of damaged product, wrong item received, or
+              manufacturing defect.
+            </p>
+          </motion.div>
+
+          <motion.div
+            variants={zoomRise}
+            whileHover={{ y: -8, scale: 1.03 }}
+            transition={{ type: "spring", stiffness: 180, damping: 16 }}
+            className="rounded-[24px] bg-white border border-[#efe3d3] p-5 shadow-sm"
+          >
+            <h3 className="text-lg font-semibold text-[#2f3e38]">
+              Important Terms
+            </h3>
+
+            <ul className="mt-3 space-y-2 text-sm md:text-base leading-7 text-[#46524d]">
+              <li>• No replacement for physical damage after use.</li>
+              <li>• Product must be unused and in original condition.</li>
+              <li>• Replacement request should be raised within 7 days.</li>
+              <li>• Approval depends on issue verification.</li>
+            </ul>
+          </motion.div>
+
+        </motion.div>
+
+        <motion.div
+          variants={riseUpSoft}
+          className="mt-6 rounded-[24px] bg-[#FAEBD7] border border-[#eadccc] px-5 py-4"
+        >
+          <p className="text-sm md:text-base leading-7 text-[#436056]">
+            For replacement support, customers should share their order
+            details and issue images/videos with our support team. Final
+            approval will be based on product inspection and policy terms.
+          </p>
+        </motion.div>
+
+      </motion.div>
+
+    </div>
+
+  </div>
+</motion.section>
     </main>
   );
 };
