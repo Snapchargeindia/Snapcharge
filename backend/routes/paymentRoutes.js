@@ -6,8 +6,8 @@ const Order = require("../models/Order");
 const router = express.Router();
 
 const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET,
+  key_id: process.env.RAZORPAY_KEY_ID || "",
+  key_secret: process.env.RAZORPAY_KEY_SECRET || "",
 });
 
 /* ================= DEBUG ROUTE ================= */
@@ -85,7 +85,7 @@ router.post("/create-order", async (req, res) => {
       });
     }
 
-    const finalAmount = Number(amount) * 100;
+    const finalAmount = Math.round(Number(amount) * 100);
 
     console.log("RAW AMOUNT:", amount);
     console.log("FINAL RAZORPAY AMOUNT:", finalAmount);
@@ -107,7 +107,7 @@ router.post("/create-order", async (req, res) => {
 
     const razorpayOrder = await razorpay.orders.create(options);
 
-    console.log("RAZORPAY ORDER CREATED:", razorpayOrder);
+    console.log("RAZORPAY ORDER CREATED:", razorpayOrder.id);
 
     const order = await Order.create({
       userId: userId || null,
@@ -232,6 +232,7 @@ router.post("/create-cod-order", async (req, res) => {
   } catch (error) {
     console.log("===== COD ORDER REQUEST FAILED =====");
     console.log("COD backend error:", error);
+
     return res.status(500).json({
       success: false,
       message: "Failed to create COD order",
@@ -253,6 +254,18 @@ router.post("/verify-payment", async (req, res) => {
 
     console.log("===== VERIFY PAYMENT START =====");
     console.log("VERIFY PAYMENT BODY:", req.body);
+
+    if (
+      !dbOrderId ||
+      !razorpay_order_id ||
+      !razorpay_payment_id ||
+      !razorpay_signature
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing payment verification fields",
+      });
+    }
 
     const body = `${razorpay_order_id}|${razorpay_payment_id}`;
 

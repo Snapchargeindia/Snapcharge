@@ -2,9 +2,10 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 const API_URL =
-  window.location.hostname === "localhost"
+  import.meta.env.VITE_API_URL ||
+  (window.location.hostname === "localhost"
     ? "http://localhost:5000"
-    : "https://snapcharge.onrender.com";
+    : "https://snapcharge.onrender.com");
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -63,12 +64,17 @@ const Signup = () => {
       const data = await res.json();
 
       if (!res.ok || !data.success) {
-        alert(data.message || "Signup failed");
+        alert(
+          `${data.message || "Signup failed"}${
+            data.error ? ` - ${data.error}` : ""
+          }`
+        );
         return;
       }
 
       localStorage.setItem("snapcharge_token", data.token);
       localStorage.setItem("snapcharge_user", JSON.stringify(data.user));
+
       navigate("/my-orders");
     } catch (error) {
       console.log("SIGNUP ERROR:", error);

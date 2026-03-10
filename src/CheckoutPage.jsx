@@ -2,9 +2,10 @@ import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const API_URL =
-  window.location.hostname === "localhost"
+  import.meta.env.VITE_API_URL ||
+  (window.location.hostname === "localhost"
     ? "http://localhost:5000"
-    : "https://snapcharge.onrender.com";
+    : "https://snapcharge.onrender.com");
 
 const CheckoutPage = () => {
   const navigate = useNavigate();
@@ -98,27 +99,31 @@ const CheckoutPage = () => {
     navigate("/order-success");
   };
 
+  const buildPayload = () => {
+    const amount = buyNowItem.price * (buyNowItem.quantity || 1);
+
+    return {
+      userId: loggedInUser?._id || null,
+      customerName: formData.fullName,
+      phone: formData.phone,
+      address: `${formData.address}, ${formData.city}, ${formData.state} - ${formData.pincode}`,
+      city: formData.city,
+      state: formData.state,
+      pincode: formData.pincode,
+      productName: buyNowItem.name,
+      productId: buyNowItem.id || buyNowItem._id || "",
+      productImage: buyNowItem.image || "",
+      variant: buyNowItem.variant || buyNowItem.selectedVariant || "Default",
+      quantity: buyNowItem.quantity || 1,
+      amount,
+    };
+  };
+
   const handleCODOrder = async () => {
     try {
       setLoading(true);
 
-      const amount = buyNowItem.price * (buyNowItem.quantity || 1);
-
-      const payload = {
-        userId: loggedInUser?._id || null,
-        customerName: formData.fullName,
-        phone: formData.phone,
-        address: `${formData.address}, ${formData.city}, ${formData.state} - ${formData.pincode}`,
-        city: formData.city,
-        state: formData.state,
-        pincode: formData.pincode,
-        productName: buyNowItem.name,
-        productId: buyNowItem.id || buyNowItem._id || "",
-        productImage: buyNowItem.image || "",
-        variant: buyNowItem.variant || buyNowItem.selectedVariant || "Default",
-        quantity: buyNowItem.quantity || 1,
-        amount,
-      };
+      const payload = buildPayload();
 
       const res = await fetch(`${API_URL}/api/payment/create-cod-order`, {
         method: "POST",
@@ -131,7 +136,11 @@ const CheckoutPage = () => {
       const data = await res.json();
 
       if (!res.ok || !data.success) {
-        alert(data.message || "Failed to place COD order");
+        alert(
+          `${data.message || "Failed to place COD order"}${
+            data.error ? ` - ${data.error}` : ""
+          }`
+        );
         return;
       }
 
@@ -152,23 +161,7 @@ const CheckoutPage = () => {
     try {
       setLoading(true);
 
-      const amount = buyNowItem.price * (buyNowItem.quantity || 1);
-
-      const payload = {
-        userId: loggedInUser?._id || null,
-        customerName: formData.fullName,
-        phone: formData.phone,
-        address: `${formData.address}, ${formData.city}, ${formData.state} - ${formData.pincode}`,
-        city: formData.city,
-        state: formData.state,
-        pincode: formData.pincode,
-        productName: buyNowItem.name,
-        productId: buyNowItem.id || buyNowItem._id || "",
-        productImage: buyNowItem.image || "",
-        variant: buyNowItem.variant || buyNowItem.selectedVariant || "Default",
-        quantity: buyNowItem.quantity || 1,
-        amount,
-      };
+      const payload = buildPayload();
 
       const orderRes = await fetch(`${API_URL}/api/payment/create-order`, {
         method: "POST",
@@ -181,7 +174,11 @@ const CheckoutPage = () => {
       const orderData = await orderRes.json();
 
       if (!orderRes.ok || !orderData.success) {
-        alert(orderData.message || "Failed to create payment order");
+        alert(
+          `${orderData.message || "Failed to create payment order"}${
+            orderData.error ? ` - ${orderData.error}` : ""
+          }`
+        );
         setLoading(false);
         return;
       }
@@ -221,7 +218,11 @@ const CheckoutPage = () => {
                 razorpayPaymentId: response.razorpay_payment_id,
               });
             } else {
-              alert(verifyData.message || "Payment verification failed");
+              alert(
+                `${verifyData.message || "Payment verification failed"}${
+                  verifyData.error ? ` - ${verifyData.error}` : ""
+                }`
+              );
             }
           } catch (error) {
             console.log("Verification error:", error);
@@ -248,6 +249,12 @@ const CheckoutPage = () => {
           },
         },
       };
+
+      if (!window.Razorpay) {
+        alert("Razorpay SDK not loaded");
+        setLoading(false);
+        return;
+      }
 
       const rzp = new window.Razorpay(options);
       rzp.open();

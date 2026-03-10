@@ -6,55 +6,71 @@ const adminAuthMiddleware = require("./middleware/adminAuthMiddleware");
 
 dotenv.config();
 
-/* ===== LOAD APP_CONFIG FROM RENDER SINGLE ENV ===== */
-if (process.env.APP_CONFIG) {
-  try {
-    const parsedConfig = JSON.parse(process.env.APP_CONFIG);
-
-    Object.keys(parsedConfig).forEach((key) => {
-      process.env[key] = parsedConfig[key];
-    });
-
-    console.log("APP_CONFIG loaded successfully");
-  } catch (error) {
-    console.log("APP_CONFIG parse error:", error.message);
-  }
-}
-
 const app = express();
 
-// middleware
-app.use(cors());
+/* ================= CORS ================= */
+
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:3000",
+  "https://snapcharge.vercel.app",
+  "https://snapcharge.in",
+  "https://www.snapcharge.in"
+];
+
+app.use(
+  cors({
+    origin: allowedOrigins,
+    credentials: true
+  })
+);
+
+/* ================= MIDDLEWARE ================= */
+
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// MongoDB connection
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => console.log("MongoDB connected"))
-  .catch((err) => console.log("Mongo error:", err.message));
+/* ================= HEALTH CHECK ================= */
 
-// test route
 app.get("/", (req, res) => {
-  res.send("API running");
+  res.send("Snapcharge API running");
 });
 
-// product routes
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "ok" });
+});
+
+/* ================= MONGODB ================= */
+
+mongoose
+  .connect(process.env.MONGO_URI, {
+    autoIndex: true
+  })
+  .then(() => console.log("MongoDB connected"))
+  .catch((err) => {
+    console.log("MongoDB connection error:", err.message);
+    process.exit(1);
+  });
+
+/* ================= ROUTES ================= */
+
 app.use("/api/products", require("./routes/productRoutes"));
 
-// payment routes
 app.use("/api/payment", require("./routes/paymentRoutes"));
 
-// orders routes
 app.use("/api/orders", require("./routes/orderRoutes"));
 
-// track order routes
 app.use("/api/track-order", require("./routes/trackOrderRoutes"));
 
-// admin auth routes
 app.use("/api/admin-auth", require("./routes/adminAuthRoutes"));
 
-// protected admin routes
-app.use("/api/admin", adminAuthMiddleware, require("./routes/adminRoutes"));
+app.use(
+  "/api/admin",
+  adminAuthMiddleware,
+  require("./routes/adminRoutes")
+);
+
+/* ================= SERVER ================= */
 
 const PORT = process.env.PORT || 5000;
 

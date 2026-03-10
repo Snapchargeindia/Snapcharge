@@ -2,9 +2,10 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const API_URL =
-  window.location.hostname === "localhost"
+  import.meta.env.VITE_API_URL ||
+  (window.location.hostname === "localhost"
     ? "http://localhost:5000"
-    : "https://snapcharge.onrender.com";
+    : "https://snapcharge.onrender.com");
 
 const AdminLogin = () => {
   const navigate = useNavigate();
@@ -45,9 +46,10 @@ const AdminLogin = () => {
 
       const data = await res.json();
 
-      if (data.success) {
+      if (res.ok && data.success) {
         sessionStorage.setItem("snapcharge_admin_token", data.token);
         sessionStorage.setItem("snapcharge_admin_email", data.admin.email);
+
         navigate("/admin");
       } else {
         alert(data.message || "Login failed");
