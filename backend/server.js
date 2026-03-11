@@ -13,14 +13,24 @@ const app = express();
 const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:3000",
-  "https://snapcharge.vercel.app",
   "https://snapcharge.in",
   "https://www.snapcharge.in",
 ];
 
 app.use(
   cors({
-    origin: allowedOrigins,
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true);
+
+      if (
+        allowedOrigins.includes(origin) ||
+        origin.includes(".amplifyapp.com")
+      ) {
+        return callback(null, true);
+      }
+
+      return callback(new Error(`CORS blocked for origin: ${origin}`));
+    },
     credentials: true,
   })
 );
@@ -55,15 +65,10 @@ mongoose
 /* ================= ROUTES ================= */
 
 app.use("/api/products", require("./routes/productRoutes"));
-
 app.use("/api/auth", require("./routes/authRoutes"));
-
 app.use("/api/payment", require("./routes/paymentRoutes"));
-
 app.use("/api/orders", require("./routes/orderRoutes"));
-
 app.use("/api/track-order", require("./routes/trackOrderRoutes"));
-
 app.use("/api/admin-auth", require("./routes/adminAuthRoutes"));
 
 app.use(
@@ -76,6 +81,6 @@ app.use(
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
+app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server running on port ${PORT}`);
 });
