@@ -13,15 +13,13 @@ const app = express();
 const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:3000",
-  "https://snapcharge.in",
-  "https://www.snapcharge.in",
+  "https://snapchargee.in",
+  "https://www.snapchargee.in",
 ];
 
 app.use(
   cors({
     origin: function (origin, callback) {
-
-      // allow requests with no origin (mobile apps, postman)
       if (!origin) return callback(null, true);
 
       const isAllowed =
@@ -71,15 +69,10 @@ mongoose
 /* ================= ROUTES ================= */
 
 app.use("/api/products", require("./routes/productRoutes"));
-
 app.use("/api/auth", require("./routes/authRoutes"));
-
 app.use("/api/payment", require("./routes/paymentRoutes"));
-
 app.use("/api/orders", require("./routes/orderRoutes"));
-
 app.use("/api/track-order", require("./routes/trackOrderRoutes"));
-
 app.use("/api/admin-auth", require("./routes/adminAuthRoutes"));
 
 app.use(
