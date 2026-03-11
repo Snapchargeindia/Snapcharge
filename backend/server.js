@@ -20,12 +20,16 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: function (origin, callback) {
+
+      // allow requests with no origin (mobile apps, postman)
       if (!origin) return callback(null, true);
 
-      if (
+      const isAllowed =
         allowedOrigins.includes(origin) ||
-        origin.includes(".amplifyapp.com")
-      ) {
+        origin.endsWith(".amplifyapp.com") ||
+        origin.endsWith(".vercel.app");
+
+      if (isAllowed) {
         return callback(null, true);
       }
 
@@ -50,13 +54,15 @@ app.get("/health", (req, res) => {
   res.status(200).json({ status: "ok" });
 });
 
-/* ================= MONGODB ================= */
+/* ================= DATABASE ================= */
 
 mongoose
   .connect(process.env.MONGO_URI, {
     autoIndex: true,
   })
-  .then(() => console.log("MongoDB connected"))
+  .then(() => {
+    console.log("MongoDB connected");
+  })
   .catch((err) => {
     console.log("MongoDB connection error:", err.message);
     process.exit(1);
@@ -65,10 +71,15 @@ mongoose
 /* ================= ROUTES ================= */
 
 app.use("/api/products", require("./routes/productRoutes"));
+
 app.use("/api/auth", require("./routes/authRoutes"));
+
 app.use("/api/payment", require("./routes/paymentRoutes"));
+
 app.use("/api/orders", require("./routes/orderRoutes"));
+
 app.use("/api/track-order", require("./routes/trackOrderRoutes"));
+
 app.use("/api/admin-auth", require("./routes/adminAuthRoutes"));
 
 app.use(
