@@ -15,13 +15,13 @@ const allowedOrigins = [
   "http://localhost:3000",
   "https://snapcharge.vercel.app",
   "https://snapcharge.in",
-  "https://www.snapcharge.in"
+  "https://www.snapcharge.in",
 ];
 
 app.use(
   cors({
     origin: allowedOrigins,
-    credentials: true
+    credentials: true,
   })
 );
 
@@ -44,7 +44,7 @@ app.get("/health", (req, res) => {
 
 mongoose
   .connect(process.env.MONGO_URI, {
-    autoIndex: true
+    autoIndex: true,
   })
   .then(() => console.log("MongoDB connected"))
   .catch((err) => {
@@ -55,6 +55,8 @@ mongoose
 /* ================= ROUTES ================= */
 
 app.use("/api/products", require("./routes/productRoutes"));
+
+app.use("/api/auth", require("./routes/authRoutes"));
 
 app.use("/api/payment", require("./routes/paymentRoutes"));
 

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 const API_URL =
   import.meta.env.VITE_API_URL ||
@@ -9,6 +9,9 @@ const API_URL =
 
 const Login = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const redirectTo = location.state?.from || "/my-orders";
 
   const [formData, setFormData] = useState({
     email: "",
@@ -57,7 +60,7 @@ const Login = () => {
       localStorage.setItem("snapcharge_token", data.token);
       localStorage.setItem("snapcharge_user", JSON.stringify(data.user));
 
-      navigate("/my-orders");
+      navigate(redirectTo, { replace: true });
     } catch (error) {
       console.log("LOGIN ERROR:", error);
       alert("Login failed. Please try again.");
@@ -67,7 +70,7 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#FAEBD7] flex items-center justify-center px-4">
+    <div className="min-h-screen bg-[#FAEBD7] pt-32 pb-16 px-4 flex items-center justify-center">
       <div className="relative bg-white w-full max-w-md rounded-3xl shadow-xl p-8">
         <button
           onClick={() => navigate("/")}
@@ -81,7 +84,7 @@ const Login = () => {
         </h1>
 
         <p className="text-sm text-gray-500 text-center mb-6">
-          Login to view your orders
+          Login to continue
         </p>
 
         <form onSubmit={handleLogin} className="space-y-4">

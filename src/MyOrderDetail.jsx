@@ -2,9 +2,10 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 const API_URL =
-  window.location.hostname === "localhost"
+  import.meta.env.VITE_API_URL ||
+  (window.location.hostname === "localhost"
     ? "http://localhost:5000"
-    : "https://snapcharge.onrender.com";
+    : "https://snapcharge.onrender.com");
 
 const statusSteps = ["Pending", "Confirmed", "Packed", "Shipped", "Delivered"];
 
@@ -15,38 +16,48 @@ const MyOrderDetail = () => {
 
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
-
-  const fetchOrder = async () => {
-    try {
-      const res = await fetch(`${API_URL}/api/my-orders/${id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const data = await res.json();
-
-      if (data.success) {
-        setOrder(data.order);
-      } else {
-        alert(data.message || "Order not found");
-        navigate("/my-orders");
-      }
-    } catch (error) {
-      console.log("MY ORDER DETAIL ERROR:", error);
-      alert("Something went wrong");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [shouldRedirectOrders, setShouldRedirectOrders] = useState(false);
 
   useEffect(() => {
     if (!token) {
       navigate("/login");
       return;
     }
+
+    const fetchOrder = async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/orders/${id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const data = await res.json();
+
+        if (!res.ok || !data.success) {
+          alert(data.message || "Order not found");
+          setShouldRedirectOrders(true);
+          return;
+        }
+
+        setOrder(data.order);
+      } catch (error) {
+        console.log("MY ORDER DETAIL ERROR:", error);
+        alert("Something went wrong");
+        setShouldRedirectOrders(true);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchOrder();
-  }, [id]);
+  }, [id, token, navigate]);
+
+  useEffect(() => {
+    if (shouldRedirectOrders) {
+      navigate("/my-orders");
+    }
+  }, [shouldRedirectOrders, navigate]);
 
   const activeStep = statusSteps.indexOf(order?.orderStatus);
 
@@ -108,7 +119,11 @@ const MyOrderDetail = () => {
                     <div
                       className="absolute top-4 left-0 h-1 bg-[#9DC183] rounded-full transition-all duration-500"
                       style={{
-                        width: `${(activeStep / (statusSteps.length - 1)) * 100}%`,
+                        width: `${
+                          activeStep >= 0
+                            ? (activeStep / (statusSteps.length - 1)) * 100
+                            : 0
+                        }%`,
                       }}
                     />
 

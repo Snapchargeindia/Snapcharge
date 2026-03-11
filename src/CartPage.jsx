@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "./CartContext";
 import { requireUserLogin } from "./authGuard";
@@ -13,15 +13,22 @@ const CartPage = () => {
     return !!localStorage.getItem("snapcharge_user");
   }, []);
 
-  if (!isLoggedIn) {
-    requireUserLogin(navigate, "Please login first to view your cart");
-    return null;
-  }
+  useEffect(() => {
+    if (!isLoggedIn) {
+      navigate("/login", {
+        state: { from: "/cart" },
+        replace: true,
+      });
+    }
+  }, [isLoggedIn, navigate]);
+
+  if (!isLoggedIn) return null;
 
   const handleCheckout = () => {
     const allowed = requireUserLogin(
       navigate,
-      "Please login first to continue checkout"
+      "Please login first to continue checkout",
+      "/login"
     );
 
     if (!allowed) return;
@@ -31,13 +38,13 @@ const CartPage = () => {
 
   if (cartItems.length === 0) {
     return (
-      <div className="min-h-screen bg-[#FAEBD7] flex flex-col items-center justify-center text-center px-6">
+      <div className="min-h-screen bg-[#FAEBD7] pt-32 pb-16 flex flex-col items-center justify-center text-center px-6">
         <h1 className="text-3xl font-bold text-[#436056] mb-4">
           Your Cart is Empty
         </h1>
 
         <p className="text-gray-600 mb-6">
-          Looks like you haven't added anything yet.
+          Looks like you haven&apos;t added anything yet.
         </p>
 
         <Link
@@ -51,7 +58,7 @@ const CartPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#FAEBD7] px-4 sm:px-6 py-10">
+    <div className="min-h-screen bg-[#FAEBD7] pt-32 pb-16 px-4 sm:px-6">
       <div className="max-w-6xl mx-auto">
         <h1 className="text-3xl font-bold mb-8 text-[#436056]">My Cart</h1>
 

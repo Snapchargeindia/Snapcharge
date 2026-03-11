@@ -2,9 +2,10 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const API_URL =
-  window.location.hostname === "localhost"
+  import.meta.env.VITE_API_URL ||
+  (window.location.hostname === "localhost"
     ? "http://localhost:5000"
-    : "https://snapcharge.onrender.com";
+    : "https://snapcharge.onrender.com");
 
 const MyOrders = () => {
   const navigate = useNavigate();
@@ -14,7 +15,7 @@ const MyOrders = () => {
 
   const fetchOrders = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/my-orders`, {
+      const res = await fetch(`${API_URL}/api/orders`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -22,14 +23,19 @@ const MyOrders = () => {
 
       const data = await res.json();
 
-      if (data.success) {
-        setOrders(data.orders || []);
-      } else {
-        alert(data.message || "Failed to fetch orders");
+      if (!res.ok || !data.success) {
+        alert(
+          `${data.message || "Failed to fetch orders"}${
+            data.error ? ` - ${data.error}` : ""
+          }`
+        );
+        return;
       }
+
+      setOrders(data.orders || []);
     } catch (error) {
       console.log("MY ORDERS ERROR:", error);
-      alert("Something went wrong");
+      alert("Something went wrong while fetching orders");
     } finally {
       setLoading(false);
     }
@@ -40,6 +46,7 @@ const MyOrders = () => {
       navigate("/login");
       return;
     }
+
     fetchOrders();
   }, []);
 
@@ -81,9 +88,11 @@ const MyOrders = () => {
                     <h2 className="text-lg font-semibold text-[#436056]">
                       {order.productName}
                     </h2>
+
                     <p className="text-sm text-gray-500 mt-1">
                       ₹{order.amount} • Qty: {order.quantity}
                     </p>
+
                     <p className="text-sm text-gray-500 mt-1">
                       {new Date(order.createdAt).toLocaleString()}
                     </p>
