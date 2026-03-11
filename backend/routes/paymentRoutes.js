@@ -5,10 +5,30 @@ const Order = require("../models/Order");
 
 const router = express.Router();
 
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID || "",
-  key_secret: process.env.RAZORPAY_KEY_SECRET || "",
-});
+/* ================= SAFE RAZORPAY INIT ================= */
+
+const getRazorpayInstance = () => {
+  const keyId = process.env.RAZORPAY_KEY_ID;
+  const keySecret = process.env.RAZORPAY_KEY_SECRET;
+
+  if (!keyId || !keySecret) {
+    console.log("RAZORPAY CONFIG MISSING:", {
+      razorpayKeyIdPresent: !!keyId,
+      razorpayKeySecretPresent: !!keySecret,
+    });
+    return null;
+  }
+
+  try {
+    return new Razorpay({
+      key_id: keyId,
+      key_secret: keySecret,
+    });
+  } catch (error) {
+    console.log("RAZORPAY INIT ERROR:", error.message);
+    return null;
+  }
+};
 
 /* ================= DEBUG ROUTE ================= */
 
@@ -39,6 +59,15 @@ const isValidPincode = (pincode) => {
 
 router.post("/create-order", async (req, res) => {
   try {
+    const razorpay = getRazorpayInstance();
+
+    if (!razorpay) {
+      return res.status(500).json({
+        success: false,
+        message: "Razorpay is not configured properly",
+      });
+    }
+
     const {
       userId,
       customerName,
@@ -264,6 +293,13 @@ router.post("/verify-payment", async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "Missing payment verification fields",
+      });
+    }
+
+    if (!process.env.RAZORPAY_KEY_SECRET) {
+      return res.status(500).json({
+        success: false,
+        message: "Razorpay secret is missing",
       });
     }
 
