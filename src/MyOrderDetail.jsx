@@ -5,7 +5,7 @@ const API_URL =
   import.meta.env.VITE_API_URL ||
   (window.location.hostname === "localhost"
     ? "http://localhost:5000"
-    : "https://snapcharge.onrender.com");
+    : "https://snapcharge-backend-env.eba-dc8dbp5.eu-north-1.elasticbeanstalk.com");
 
 const statusSteps = ["Pending", "Confirmed", "Packed", "Shipped", "Delivered"];
 
