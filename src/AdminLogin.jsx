@@ -5,7 +5,7 @@ const API_URL =
   import.meta.env.VITE_API_URL ||
   (window.location.hostname === "localhost"
     ? "http://localhost:5000"
-    : "https://snapcharge-backend-env.eba-dci8dbp5.eu-north-1.elasticbeanstalk.com");
+    : "http://snapcharge-backend-prod-env.eba-m6tqr9gn.eu-north-1.elasticbeanstalk.com");
 
 const AdminLogin = () => {
   const navigate = useNavigate();
