@@ -52,6 +52,10 @@ app.get("/health", (req, res) => {
   res.status(200).json({ status: "ok" });
 });
 
+app.get("/api/test", (req, res) => {
+  res.status(200).json({ message: "API working" });
+});
+
 /* ================= DATABASE ================= */
 
 mongoose
@@ -63,7 +67,6 @@ mongoose
   })
   .catch((err) => {
     console.log("MongoDB connection error:", err.message);
-    process.exit(1);
   });
 
 /* ================= ROUTES ================= */
