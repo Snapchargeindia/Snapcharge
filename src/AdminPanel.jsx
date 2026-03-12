@@ -13,7 +13,7 @@ import {
 const API_URL =
   window.location.hostname === "localhost"
     ? "http://localhost:5000"
-    : "https://snapcharge-backend-prod-env.eba-m6tqr9gn.eu-north-1.elasticbeanstalk.com";
+    : "http://snapcharge-backend-prod-env.eba-m6tqr9gn.eu-north-1.elasticbeanstalk.com";
 
 const statusOptions = [
   "Pending",
