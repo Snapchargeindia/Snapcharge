@@ -1,9 +1,37 @@
 const express = require("express");
 const crypto = require("crypto");
 const Razorpay = require("razorpay");
+const axios = require("axios");
+const jwt = require("jsonwebtoken");
 const Order = require("../models/Order");
 
 const router = express.Router();
+
+/* ================= DEBUG ================= */
+
+console.log("PAYMENT ROUTES ORDER MODEL CHECK:", {
+  type: typeof Order,
+  hasCreate: typeof Order?.create,
+  modelName: Order?.modelName,
+});
+
+/* ================= AUTH HELPER ================= */
+
+const getUserFromToken = (req) => {
+  try {
+    const authHeader = req.headers.authorization || "";
+    const token = authHeader.startsWith("Bearer ")
+      ? authHeader.split(" ")[1]
+      : null;
+
+    if (!token) return null;
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    return decoded;
+  } catch (error) {
+    return null;
+  }
+};
 
 /* ================= SAFE RAZORPAY INIT ================= */
 
@@ -30,6 +58,232 @@ const getRazorpayInstance = () => {
   }
 };
 
+/* ================= SHIPROCKET TOKEN CACHE ================= */
+
+let shiprocketToken = null;
+let shiprocketTokenCreatedAt = null;
+let shiprocketBlockedUntil = null;
+
+const getShiprocketToken = async () => {
+  try {
+    if (shiprocketBlockedUntil && Date.now() < shiprocketBlockedUntil) {
+      console.log("SHIPROCKET LOGIN SKIPPED - TEMP BLOCK ACTIVE");
+      return null;
+    }
+
+    if (
+      shiprocketToken &&
+      shiprocketTokenCreatedAt &&
+      Date.now() - shiprocketTokenCreatedAt < 8 * 60 * 1000
+    ) {
+      return shiprocketToken;
+    }
+
+    if (!process.env.SHIPROCKET_EMAIL || !process.env.SHIPROCKET_PASSWORD) {
+      console.log("SHIPROCKET CONFIG MISSING");
+      return null;
+    }
+
+    const response = await axios.post(
+      "https://apiv2.shiprocket.in/v1/external/auth/login",
+      {
+        email: process.env.SHIPROCKET_EMAIL,
+        password: process.env.SHIPROCKET_PASSWORD,
+      }
+    );
+
+    shiprocketToken = response.data?.token || null;
+    shiprocketTokenCreatedAt = Date.now();
+    shiprocketBlockedUntil = null;
+
+    console.log("SHIPROCKET TOKEN GENERATED");
+    return shiprocketToken;
+  } catch (error) {
+    const status = error.response?.status;
+    const data = error.response?.data;
+
+    console.log("SHIPROCKET LOGIN ERROR:", data || error.message);
+
+    if (
+      status === 403 ||
+      String(data?.message || "").toLowerCase().includes("blocked")
+    ) {
+      shiprocketBlockedUntil = Date.now() + 2 * 60 * 60 * 1000;
+      console.log("SHIPROCKET TEMP BLOCK STORED FOR 2 HOURS");
+    }
+
+    return null;
+  }
+};
+
+/* ================= SHIPROCKET SHIPMENT ================= */
+
+const createShiprocketShipment = async (order) => {
+  try {
+    console.log("CREATE SHIPROCKET SHIPMENT START:", {
+      orderId: order?._id,
+      customerName: order?.customerName,
+      phone: order?.phone,
+      city: order?.city,
+      state: order?.state,
+      pincode: order?.pincode,
+      amount: order?.amount,
+      paymentMethod: order?.paymentMethod,
+    });
+
+    const token = await getShiprocketToken();
+
+    if (!token) {
+      console.log("SHIPROCKET TOKEN NOT GENERATED");
+      return null;
+    }
+
+    const payload = {
+      order_id: order._id.toString(),
+      order_date: new Date().toISOString().slice(0, 10),
+      pickup_location: "Primary",
+      channel_id: "",
+      comment: "Order created from Snapcharge website",
+
+      billing_customer_name: order.customerName,
+      billing_last_name: "",
+      billing_address: order.address,
+      billing_address_2: "",
+      billing_city: order.city,
+      billing_pincode: order.pincode,
+      billing_state: order.state,
+      billing_country: "India",
+      billing_email: "support@snapchargee.in",
+      billing_phone: order.phone,
+
+      shipping_is_billing: true,
+      shipping_customer_name: "",
+      shipping_last_name: "",
+      shipping_address: "",
+      shipping_address_2: "",
+      shipping_city: "",
+      shipping_pincode: "",
+      shipping_country: "",
+      shipping_state: "",
+      shipping_email: "",
+      shipping_phone: "",
+
+      order_items: [
+        {
+          name: order.productName,
+          sku: order.productId || "SKU001",
+          units: order.quantity || 1,
+          selling_price: String(order.amount),
+          discount: "",
+          tax: "",
+          hsn: "",
+        },
+      ],
+
+      payment_method: order.paymentMethod === "COD" ? "COD" : "Prepaid",
+      shipping_charges: 0,
+      giftwrap_charges: 0,
+      transaction_charges: 0,
+      total_discount: 0,
+      sub_total: Number(order.amount),
+      length: 10,
+      breadth: 10,
+      height: 10,
+      weight: 0.5,
+    };
+
+    console.log("SHIPROCKET PAYLOAD:", payload);
+
+    const response = await axios.post(
+      "https://apiv2.shiprocket.in/v1/external/orders/create/adhoc",
+      payload,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    console.log("SHIPROCKET ORDER CREATE RESPONSE:", response.data);
+
+    const shiprocketOrderId = response.data?.order_id || "";
+    const shipmentId = response.data?.shipment_id || "";
+
+    let awbCode = "";
+    let courierName = "";
+    let trackingUrl = "";
+
+    if (shipmentId) {
+      try {
+        const awbResponse = await axios.post(
+          "https://apiv2.shiprocket.in/v1/external/courier/assign/awb",
+          { shipment_id: shipmentId },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        console.log("SHIPROCKET AWB RESPONSE:", awbResponse.data);
+
+        awbCode = awbResponse.data?.response?.data?.awb_code || "";
+        courierName = awbResponse.data?.response?.data?.courier_name || "";
+      } catch (awbError) {
+        console.log(
+          "SHIPROCKET AWB ERROR:",
+          awbError.response?.data || awbError.message
+        );
+      }
+    }
+
+    if (awbCode) {
+      try {
+        const trackResponse = await axios.get(
+          `https://apiv2.shiprocket.in/v1/external/courier/track/awb/${awbCode}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        console.log("SHIPROCKET TRACK RESPONSE:", trackResponse.data);
+
+        trackingUrl = trackResponse.data?.tracking_data?.track_url || "";
+      } catch (trackError) {
+        console.log(
+          "SHIPROCKET TRACK ERROR:",
+          trackError.response?.data || trackError.message
+        );
+      }
+    }
+
+    await Order.findByIdAndUpdate(order._id, {
+      shiprocketOrderId,
+      awbCode,
+      courierName,
+      trackingUrl,
+      orderStatus: "Confirmed",
+    });
+
+    return {
+      shiprocketOrderId,
+      awbCode,
+      courierName,
+      trackingUrl,
+    };
+  } catch (error) {
+    console.log(
+      "SHIPROCKET CREATE SHIPMENT ERROR:",
+      error.response?.data || error.message
+    );
+    return null;
+  }
+};
+
 /* ================= DEBUG ROUTE ================= */
 
 router.get("/debug-check", (req, res) => {
@@ -39,6 +293,8 @@ router.get("/debug-check", (req, res) => {
     razorpayKeySecretPresent: !!process.env.RAZORPAY_KEY_SECRET,
     mongoUriPresent: !!process.env.MONGO_URI,
     jwtSecretPresent: !!process.env.JWT_SECRET,
+    shiprocketEmailPresent: !!process.env.SHIPROCKET_EMAIL,
+    shiprocketPasswordPresent: !!process.env.SHIPROCKET_PASSWORD,
     razorpayKeyIdPreview: process.env.RAZORPAY_KEY_ID
       ? process.env.RAZORPAY_KEY_ID.slice(0, 10)
       : null,
@@ -59,6 +315,8 @@ const isValidPincode = (pincode) => {
 
 router.post("/create-order", async (req, res) => {
   try {
+    console.log("ONLINE CREATE ORDER BODY:", req.body);
+
     const razorpay = getRazorpayInstance();
 
     if (!razorpay) {
@@ -68,8 +326,9 @@ router.post("/create-order", async (req, res) => {
       });
     }
 
+    const user = getUserFromToken(req);
+
     const {
-      userId,
       customerName,
       phone,
       address,
@@ -83,15 +342,6 @@ router.post("/create-order", async (req, res) => {
       quantity,
       amount,
     } = req.body;
-
-    console.log("===== CREATE ORDER REQUEST START =====");
-    console.log("CREATE ORDER BODY:", req.body);
-    console.log("ENV CHECK:", {
-      razorpayKeyIdPresent: !!process.env.RAZORPAY_KEY_ID,
-      razorpayKeySecretPresent: !!process.env.RAZORPAY_KEY_SECRET,
-      mongoUriPresent: !!process.env.MONGO_URI,
-      jwtSecretPresent: !!process.env.JWT_SECRET,
-    });
 
     if (!customerName || !phone || !address || !productName || !amount) {
       return res.status(400).json({
@@ -116,9 +366,6 @@ router.post("/create-order", async (req, res) => {
 
     const finalAmount = Math.round(Number(amount) * 100);
 
-    console.log("RAW AMOUNT:", amount);
-    console.log("FINAL RAZORPAY AMOUNT:", finalAmount);
-
     if (!finalAmount || Number.isNaN(finalAmount) || finalAmount <= 0) {
       return res.status(400).json({
         success: false,
@@ -126,20 +373,14 @@ router.post("/create-order", async (req, res) => {
       });
     }
 
-    const options = {
+    const razorpayOrder = await razorpay.orders.create({
       amount: finalAmount,
       currency: "INR",
       receipt: `rcpt_${Date.now()}`,
-    };
-
-    console.log("RAZORPAY OPTIONS:", options);
-
-    const razorpayOrder = await razorpay.orders.create(options);
-
-    console.log("RAZORPAY ORDER CREATED:", razorpayOrder.id);
+    });
 
     const order = await Order.create({
-      userId: userId || null,
+      userId: user?._id || null,
       customerName,
       phone,
       address,
@@ -158,9 +399,6 @@ router.post("/create-order", async (req, res) => {
       orderStatus: "Pending",
     });
 
-    console.log("ORDER SAVED IN DB:", order._id);
-    console.log("===== CREATE ORDER REQUEST SUCCESS =====");
-
     return res.status(201).json({
       success: true,
       key: process.env.RAZORPAY_KEY_ID,
@@ -170,14 +408,7 @@ router.post("/create-order", async (req, res) => {
       dbOrderId: order._id,
     });
   } catch (error) {
-    console.log("===== CREATE ORDER REQUEST FAILED =====");
     console.log("ONLINE ORDER CREATE ERROR:", error);
-    console.log("ONLINE ORDER CREATE ERROR MESSAGE:", error.message);
-    console.log("ONLINE ORDER CREATE ERROR STATUS:", error.statusCode || null);
-    console.log(
-      "ONLINE ORDER CREATE ERROR DESCRIPTION:",
-      error.description || null
-    );
 
     return res.status(500).json({
       success: false,
@@ -191,11 +422,11 @@ router.post("/create-order", async (req, res) => {
 
 router.post("/create-cod-order", async (req, res) => {
   try {
-    console.log("===== COD ORDER REQUEST START =====");
-    console.log("COD route hit:", req.body);
+    console.log("COD BODY:", req.body);
+
+    const user = getUserFromToken(req);
 
     const {
-      userId,
       customerName,
       phone,
       address,
@@ -232,7 +463,7 @@ router.post("/create-cod-order", async (req, res) => {
     }
 
     const order = await Order.create({
-      userId: userId || null,
+      userId: user?._id || null,
       customerName,
       phone,
       address,
@@ -250,8 +481,13 @@ router.post("/create-cod-order", async (req, res) => {
       orderStatus: "Pending",
     });
 
-    console.log("COD ORDER SAVED:", order._id);
-    console.log("===== COD ORDER REQUEST SUCCESS =====");
+    console.log("COD ORDER CREATED:", order);
+
+    try {
+      await createShiprocketShipment(order);
+    } catch (shipError) {
+      console.log("COD SHIPROCKET ERROR:", shipError.message);
+    }
 
     return res.status(201).json({
       success: true,
@@ -259,8 +495,8 @@ router.post("/create-cod-order", async (req, res) => {
       order,
     });
   } catch (error) {
-    console.log("===== COD ORDER REQUEST FAILED =====");
-    console.log("COD backend error:", error);
+    console.log("COD BACKEND ERROR FULL:", error);
+    console.log("COD BACKEND ERROR MESSAGE:", error.message);
 
     return res.status(500).json({
       success: false,
@@ -280,9 +516,6 @@ router.post("/verify-payment", async (req, res) => {
       razorpay_payment_id,
       razorpay_signature,
     } = req.body;
-
-    console.log("===== VERIFY PAYMENT START =====");
-    console.log("VERIFY PAYMENT BODY:", req.body);
 
     if (
       !dbOrderId ||
@@ -312,8 +545,6 @@ router.post("/verify-payment", async (req, res) => {
 
     const isAuthentic = expectedSignature === razorpay_signature;
 
-    console.log("PAYMENT SIGNATURE MATCH:", isAuthentic);
-
     if (!isAuthentic) {
       return res.status(400).json({
         success: false,
@@ -334,8 +565,13 @@ router.post("/verify-payment", async (req, res) => {
       { new: true }
     );
 
-    console.log("PAYMENT VERIFIED ORDER:", updatedOrder?._id);
-    console.log("===== VERIFY PAYMENT SUCCESS =====");
+    if (updatedOrder) {
+      try {
+        await createShiprocketShipment(updatedOrder);
+      } catch (shipError) {
+        console.log("ONLINE SHIPROCKET ERROR:", shipError.message);
+      }
+    }
 
     return res.status(200).json({
       success: true,
@@ -343,9 +579,7 @@ router.post("/verify-payment", async (req, res) => {
       order: updatedOrder,
     });
   } catch (error) {
-    console.log("===== VERIFY PAYMENT FAILED =====");
     console.log("VERIFY PAYMENT ERROR:", error);
-    console.log("VERIFY PAYMENT ERROR MESSAGE:", error.message);
 
     return res.status(500).json({
       success: false,

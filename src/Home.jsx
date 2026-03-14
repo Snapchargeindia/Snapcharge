@@ -65,75 +65,68 @@ const spotlightCards = [
   },
 ];
 
-const smoothEase = [0.22, 1, 0.36, 1];
+const smoothEase = [0.25, 0.1, 0.25, 1];
+const mobileViewport = { once: true, amount: 0.1 };
 
-const riseUp = {
+const fadeUp = {
   hidden: {
     opacity: 0,
-    y: 90,
-    filter: "blur(10px)",
+    y: 35,
   },
   show: {
     opacity: 1,
     y: 0,
-    filter: "blur(0px)",
     transition: {
-      duration: 1,
+      duration: 0.8,
       ease: smoothEase,
     },
   },
 };
 
-const riseUpSoft = {
+const fadeSoft = {
   hidden: {
     opacity: 0,
-    y: 55,
-    filter: "blur(6px)",
+    y: 20,
   },
   show: {
     opacity: 1,
     y: 0,
-    filter: "blur(0px)",
     transition: {
-      duration: 0.85,
+      duration: 0.65,
       ease: smoothEase,
     },
   },
 };
 
-const riseLeft = {
+const fadeLeft = {
   hidden: {
     opacity: 0,
-    x: -70,
-    y: 40,
-    filter: "blur(8px)",
+    x: -25,
+    y: 15,
   },
   show: {
     opacity: 1,
     x: 0,
     y: 0,
-    filter: "blur(0px)",
     transition: {
-      duration: 0.95,
+      duration: 0.75,
       ease: smoothEase,
     },
   },
 };
 
-const riseRight = {
+const fadeRight = {
   hidden: {
     opacity: 0,
-    x: 70,
-    y: 40,
-    filter: "blur(8px)",
+    x: 25,
+    y: 15,
   },
   show: {
     opacity: 1,
     x: 0,
     y: 0,
-    filter: "blur(0px)",
     transition: {
-      duration: 0.95,
+      duration: 0.75,
       ease: smoothEase,
     },
   },
@@ -143,8 +136,8 @@ const staggerParent = {
   hidden: {},
   show: {
     transition: {
-      staggerChildren: 0.14,
-      delayChildren: 0.1,
+      staggerChildren: 0.1,
+      delayChildren: 0.08,
     },
   },
 };
@@ -153,51 +146,65 @@ const cardStagger = {
   hidden: {},
   show: {
     transition: {
-      staggerChildren: 0.12,
+      staggerChildren: 0.08,
     },
   },
 };
 
-const zoomRise = {
+const zoomSoft = {
   hidden: {
     opacity: 0,
-    scale: 0.9,
-    y: 50,
-    filter: "blur(8px)",
+    scale: 0.96,
+    y: 20,
   },
   show: {
     opacity: 1,
     scale: 1,
     y: 0,
-    filter: "blur(0px)",
     transition: {
-      duration: 0.9,
+      duration: 0.7,
       ease: smoothEase,
     },
   },
 };
 
 const floatSlow = {
-  y: [0, -14, 0],
+  y: [0, -8, 0],
   transition: {
-    duration: 4.8,
+    duration: 5,
     repeat: Infinity,
     ease: "easeInOut",
   },
 };
 
 const floatSoft = {
-  y: [0, -8, 0],
+  y: [0, -5, 0],
   transition: {
-    duration: 3.8,
+    duration: 4,
+    repeat: Infinity,
+    ease: "easeInOut",
+  },
+};
+
+const glowPulse = {
+  scale: [1, 1.04, 1],
+  opacity: [0.18, 0.26, 0.18],
+  transition: {
+    duration: 5,
     repeat: Infinity,
     ease: "easeInOut",
   },
 };
 
 const Home = () => {
+  const isMobile =
+    typeof window !== "undefined" ? window.innerWidth < 768 : false;
+
   return (
-    <main className="min-h-screen bg-[#FAEBD7] pt-[128px] pb-16 text-[#2f3e38] overflow-x-hidden">
+    <main
+      className="min-h-screen bg-[#FAEBD7] pt-[128px] pb-16 text-[#2f3e38] overflow-x-hidden scroll-smooth"
+      style={{ WebkitOverflowScrolling: "touch" }}
+    >
       {/* ================= HERO ================= */}
       <section className="w-[94%] max-w-7xl mx-auto">
         <motion.div
@@ -207,21 +214,13 @@ const Home = () => {
           className="relative overflow-hidden rounded-[38px] bg-gradient-to-br from-[#fff8ef] via-[#f6efe5] to-[#f0e4d2] border border-[#eadcca] shadow-[0_25px_70px_rgba(67,96,86,0.10)]"
         >
           <motion.div
-            animate={{
-              scale: [1, 1.08, 1],
-              opacity: [0.22, 0.34, 0.22],
-            }}
-            transition={{
-              duration: 5,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
+            animate={glowPulse}
             className="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-[#9DC18322] blur-3xl"
           />
           <motion.div
             animate={{
-              scale: [1, 1.06, 1],
-              opacity: [0.14, 0.24, 0.14],
+              scale: [1, 1.03, 1],
+              opacity: [0.12, 0.2, 0.12],
             }}
             transition={{
               duration: 6,
@@ -232,16 +231,16 @@ const Home = () => {
           />
 
           <div className="relative z-10 grid lg:grid-cols-[1.05fr_0.95fr] gap-10 items-center px-6 sm:px-8 md:px-12 lg:px-16 py-12 md:py-16 lg:py-20">
-            <motion.div variants={riseLeft}>
+            <motion.div variants={fadeLeft}>
               <motion.span
-                variants={riseUpSoft}
+                variants={fadeSoft}
                 className="inline-flex items-center rounded-full border border-[#d9ccb8] bg-white/70 backdrop-blur px-4 py-2 text-[11px] sm:text-xs font-semibold tracking-[0.25em] text-[#436056] uppercase"
               >
                 Premium Tech Accessories
               </motion.span>
 
               <motion.h1
-                variants={riseUp}
+                variants={fadeUp}
                 className="mt-6 text-4xl sm:text-5xl lg:text-7xl font-black leading-[0.98] tracking-[-0.03em] text-[#26342f]"
               >
                 Power Your
@@ -252,7 +251,7 @@ const Home = () => {
               </motion.h1>
 
               <motion.p
-                variants={riseUpSoft}
+                variants={fadeSoft}
                 className="mt-6 max-w-xl text-base md:text-lg leading-8 text-[#436056]"
               >
                 Premium phone covers, watch accessories and charging solutions
@@ -260,13 +259,10 @@ const Home = () => {
               </motion.p>
 
               <motion.div
-                variants={riseUpSoft}
+                variants={fadeSoft}
                 className="mt-8 flex flex-wrap gap-4"
               >
-                <motion.div
-                  whileHover={{ scale: 1.06, y: -2 }}
-                  whileTap={{ scale: 0.96 }}
-                >
+                <motion.div whileHover={{ scale: 1.03, y: -2 }} whileTap={{ scale: 0.98 }}>
                   <Link
                     to="/premium-covers"
                     className="px-8 py-3 rounded-full bg-[#2f3e38] text-white font-semibold hover:bg-[#9DC183] transition duration-300 inline-block shadow-[0_10px_25px_rgba(0,0,0,0.08)]"
@@ -275,10 +271,7 @@ const Home = () => {
                   </Link>
                 </motion.div>
 
-                <motion.div
-                  whileHover={{ scale: 1.06, y: -2 }}
-                  whileTap={{ scale: 0.96 }}
-                >
+                <motion.div whileHover={{ scale: 1.03, y: -2 }} whileTap={{ scale: 0.98 }}>
                   <Link
                     to="/silicone-covers"
                     className="px-8 py-3 rounded-full border border-[#436056] text-[#436056] font-semibold hover:bg-[#436056] hover:text-white transition duration-300 inline-block"
@@ -299,9 +292,8 @@ const Home = () => {
                 ].map((item) => (
                   <motion.div
                     key={item.text}
-                    variants={zoomRise}
-                    whileHover={{ y: -8, scale: 1.03 }}
-                    transition={{ type: "spring", stiffness: 180, damping: 16 }}
+                    variants={zoomSoft}
+                    whileHover={{ y: -5, scale: 1.02 }}
                     className="rounded-[22px] bg-white/75 backdrop-blur px-4 py-4 shadow-sm border border-[#efe3d3]"
                   >
                     <h3 className="text-2xl font-bold text-[#2f3e38]">
@@ -316,24 +308,16 @@ const Home = () => {
             </motion.div>
 
             <motion.div
-              variants={riseRight}
+              variants={fadeRight}
               className="relative flex justify-center lg:justify-end"
             >
               <motion.div
-                animate={{
-                  scale: [1, 1.08, 1],
-                  opacity: [0.24, 0.34, 0.24],
-                }}
-                transition={{
-                  duration: 5,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }}
+                animate={glowPulse}
                 className="absolute h-[320px] w-[320px] md:h-[430px] md:w-[430px] rounded-full bg-[#9DC18330] blur-3xl"
               />
               <motion.div
-                animate={floatSlow}
-                whileHover={{ y: -8, scale: 1.02 }}
+                animate={isMobile ? {} : floatSlow}
+                whileHover={{ y: -5, scale: 1.01 }}
                 className="relative w-full max-w-[560px] rounded-[34px] bg-white/45 backdrop-blur-md border border-white/40 p-4 sm:p-6 shadow-[0_35px_80px_rgba(0,0,0,0.14)]"
               >
                 <img
@@ -352,22 +336,22 @@ const Home = () => {
         className="w-[94%] max-w-7xl mx-auto mt-7"
         initial="hidden"
         whileInView="show"
-        viewport={{ once: false, amount: 0.12 }}
-        variants={riseUp}
+        viewport={mobileViewport}
+        variants={fadeUp}
       >
         <div className="rounded-[26px] bg-white/70 backdrop-blur px-4 md:px-6 py-5 border border-[#eadccc] shadow-sm">
           <motion.div
             variants={cardStagger}
             initial="hidden"
             whileInView="show"
-            viewport={{ once: false, amount: 0.12 }}
+            viewport={mobileViewport}
             className="flex flex-wrap justify-center gap-3"
           >
             {categoryStrip.map((item, i) => (
               <motion.div
                 key={i}
-                variants={zoomRise}
-                whileHover={{ y: -4, scale: 1.04 }}
+                variants={zoomSoft}
+                whileHover={{ y: -3, scale: 1.03 }}
               >
                 <Link
                   to={item.to}
@@ -386,15 +370,15 @@ const Home = () => {
         className="mt-20"
         initial="hidden"
         whileInView="show"
-        viewport={{ once: false, amount: 0.12 }}
-        variants={zoomRise}
+        viewport={mobileViewport}
+        variants={zoomSoft}
       >
         <div className="relative w-[94%] max-w-7xl mx-auto h-[72vh] md:h-[84vh] rounded-[40px] overflow-hidden shadow-[0_25px_80px_rgba(0,0,0,0.12)]">
           <motion.img
-            initial={{ scale: 1.12 }}
-            whileInView={{ scale: 1 }}
-            transition={{ duration: 1.1, ease: smoothEase }}
-            viewport={{ once: false, amount: 0.12 }}
+            initial={{ scale: 1.04, opacity: 0.85 }}
+            whileInView={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.9, ease: smoothEase }}
+            viewport={mobileViewport}
             src={screenProtectorImg}
             alt="Screen protector"
             className="absolute inset-0 w-full h-full object-cover"
@@ -404,20 +388,20 @@ const Home = () => {
           <motion.div
             initial="hidden"
             whileInView="show"
-            viewport={{ once: false, amount: 0.12 }}
+            viewport={mobileViewport}
             variants={staggerParent}
             className="relative z-10 h-full flex items-center px-7 sm:px-10 md:px-16"
           >
             <div className="max-w-2xl text-white">
               <motion.span
-                variants={riseUpSoft}
+                variants={fadeSoft}
                 className="inline-block px-4 py-2 rounded-full bg-white/10 backdrop-blur border border-white/20 text-xs sm:text-sm tracking-[0.22em] uppercase"
               >
                 Minimal. Strong. Premium.
               </motion.span>
 
               <motion.h2
-                variants={riseUp}
+                variants={fadeUp}
                 className="mt-6 text-4xl md:text-6xl font-black leading-[1.03] tracking-[-0.03em]"
               >
                 Accessories that
@@ -428,7 +412,7 @@ const Home = () => {
               </motion.h2>
 
               <motion.p
-                variants={riseUpSoft}
+                variants={fadeSoft}
                 className="mt-5 text-base md:text-lg text-white/85 leading-8 max-w-xl"
               >
                 Discover better materials, cleaner aesthetics and everyday
@@ -436,9 +420,9 @@ const Home = () => {
               </motion.p>
 
               <motion.div
-                variants={riseUpSoft}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.97 }}
+                variants={fadeSoft}
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.98 }}
               >
                 <Link
                   to="/screen-protectors"
@@ -457,11 +441,11 @@ const Home = () => {
         className="w-[94%] max-w-7xl mx-auto mt-24"
         initial="hidden"
         whileInView="show"
-        viewport={{ once: false, amount: 0.12 }}
+        viewport={mobileViewport}
       >
         <div className="grid lg:grid-cols-[0.92fr_1.08fr] gap-8 items-stretch">
           <motion.div
-            variants={riseLeft}
+            variants={fadeLeft}
             className="rounded-[34px] bg-white border border-[#ede0cf] p-7 md:p-10 shadow-[0_20px_55px_rgba(0,0,0,0.06)] flex flex-col justify-between"
           >
             <div>
@@ -489,10 +473,7 @@ const Home = () => {
             </div>
 
             <div className="mt-8 flex flex-wrap gap-4">
-              <motion.div
-                whileHover={{ scale: 1.05, y: -2 }}
-                whileTap={{ scale: 0.96 }}
-              >
+              <motion.div whileHover={{ scale: 1.03, y: -2 }} whileTap={{ scale: 0.98 }}>
                 <Link
                   to="/premium-covers"
                   className="px-7 py-3 rounded-full bg-[#436056] text-white font-semibold hover:bg-[#9DC183] transition inline-block"
@@ -501,10 +482,7 @@ const Home = () => {
                 </Link>
               </motion.div>
 
-              <motion.div
-                whileHover={{ scale: 1.05, y: -2 }}
-                whileTap={{ scale: 0.96 }}
-              >
+              <motion.div whileHover={{ scale: 1.03, y: -2 }} whileTap={{ scale: 0.98 }}>
                 <Link
                   to="/transparent-covers"
                   className="px-7 py-3 rounded-full border border-[#436056] text-[#436056] font-semibold hover:bg-[#436056] hover:text-white transition inline-block"
@@ -516,13 +494,13 @@ const Home = () => {
           </motion.div>
 
           <motion.div
-            variants={riseRight}
-            whileHover={{ y: -8 }}
+            variants={fadeRight}
+            whileHover={{ y: -4 }}
             className="relative rounded-[34px] overflow-hidden bg-[#f3e8d9] min-h-[420px] shadow-[0_20px_55px_rgba(0,0,0,0.08)]"
           >
             <div className="absolute inset-0 bg-gradient-to-br from-[#ffffff60] to-transparent" />
             <motion.img
-              animate={floatSoft}
+              animate={isMobile ? {} : floatSoft}
               src={protectionImg}
               alt="Protection"
               className="absolute inset-0 w-full h-full object-contain p-8 md:p-10"
@@ -544,23 +522,23 @@ const Home = () => {
         className="w-[94%] max-w-7xl mx-auto mt-24"
         initial="hidden"
         whileInView="show"
-        viewport={{ once: false, amount: 0.12 }}
+        viewport={mobileViewport}
       >
         <div className="grid md:grid-cols-2 gap-8 items-center">
           <motion.div
-            variants={riseLeft}
-            whileHover={{ y: -8 }}
+            variants={fadeLeft}
+            whileHover={{ y: -4 }}
             className="relative rounded-[34px] bg-gradient-to-br from-[#eef5e8] to-[#f6eee3] border border-[#e7dccb] min-h-[420px] overflow-hidden shadow-[0_20px_55px_rgba(0,0,0,0.06)]"
           >
             <motion.img
-              animate={floatSoft}
+              animate={isMobile ? {} : floatSoft}
               src={watchStrapsImg}
               alt="Watch straps"
               className="absolute inset-0 w-full h-full object-contain p-8 md:p-10"
             />
           </motion.div>
 
-          <motion.div variants={riseRight} className="px-1 md:px-6">
+          <motion.div variants={fadeRight} className="px-1 md:px-6">
             <span className="text-[11px] sm:text-xs font-semibold tracking-[0.25em] text-[#7e9d72] uppercase">
               Apple Watch Straps
             </span>
@@ -580,7 +558,7 @@ const Home = () => {
               variants={cardStagger}
               initial="hidden"
               whileInView="show"
-              viewport={{ once: false, amount: 0.12 }}
+              viewport={mobileViewport}
               className="mt-8 grid sm:grid-cols-2 gap-4 max-w-xl"
             >
               {[
@@ -592,9 +570,8 @@ const Home = () => {
               ].map((card) => (
                 <motion.div
                   key={card.t}
-                  variants={zoomRise}
-                  whileHover={{ y: -8, scale: 1.03 }}
-                  transition={{ type: "spring", stiffness: 180, damping: 16 }}
+                  variants={zoomSoft}
+                  whileHover={{ y: -5, scale: 1.02 }}
                   className="rounded-[24px] bg-white p-5 border border-[#efe3d3] shadow-sm"
                 >
                   <h3 className="font-semibold text-[#2f3e38]">{card.t}</h3>
@@ -606,10 +583,7 @@ const Home = () => {
             </motion.div>
 
             <div className="mt-8 flex flex-wrap gap-4">
-              <motion.div
-                whileHover={{ scale: 1.05, y: -2 }}
-                whileTap={{ scale: 0.96 }}
-              >
+              <motion.div whileHover={{ scale: 1.03, y: -2 }} whileTap={{ scale: 0.98 }}>
                 <Link
                   to="/watch-straps"
                   className="px-7 py-3 rounded-full bg-[#2f3e38] text-white font-semibold hover:bg-[#9DC183] transition duration-300 inline-block"
@@ -618,10 +592,7 @@ const Home = () => {
                 </Link>
               </motion.div>
 
-              <motion.div
-                whileHover={{ scale: 1.05, y: -2 }}
-                whileTap={{ scale: 0.96 }}
-              >
+              <motion.div whileHover={{ scale: 1.03, y: -2 }} whileTap={{ scale: 0.98 }}>
                 <Link
                   to="/watch-cases"
                   className="px-7 py-3 rounded-full border border-[#436056] text-[#436056] font-semibold hover:bg-[#436056] hover:text-white transition duration-300 inline-block"
@@ -639,13 +610,13 @@ const Home = () => {
         className="mt-24"
         initial="hidden"
         whileInView="show"
-        viewport={{ once: false, amount: 0.12 }}
-        variants={zoomRise}
+        viewport={mobileViewport}
+        variants={zoomSoft}
       >
         <div className="w-[94%] max-w-7xl mx-auto rounded-[40px] overflow-hidden bg-[#2f3e38] shadow-[0_25px_80px_rgba(0,0,0,0.12)]">
           <div className="grid lg:grid-cols-[0.95fr_1.05fr] items-stretch">
             <motion.div
-              variants={riseLeft}
+              variants={fadeLeft}
               className="px-8 md:px-12 py-12 md:py-16 text-white flex flex-col justify-center"
             >
               <span className="text-[11px] sm:text-xs font-semibold tracking-[0.25em] text-[#c7dfb8] uppercase">
@@ -664,24 +635,19 @@ const Home = () => {
               </p>
 
               <div className="mt-8 flex flex-wrap gap-3">
-                {["Precision Fit", "Sleek Finish", "Edge Protection"].map(
-                  (tag) => (
-                    <motion.span
-                      key={tag}
-                      whileHover={{ y: -4, scale: 1.04 }}
-                      className="px-4 py-2 rounded-full bg-white/10 border border-white/15 text-sm"
-                    >
-                      {tag}
-                    </motion.span>
-                  )
-                )}
+                {["Precision Fit", "Sleek Finish", "Edge Protection"].map((tag) => (
+                  <motion.span
+                    key={tag}
+                    whileHover={{ y: -3, scale: 1.02 }}
+                    className="px-4 py-2 rounded-full bg-white/10 border border-white/15 text-sm"
+                  >
+                    {tag}
+                  </motion.span>
+                ))}
               </div>
 
               <div className="mt-8 flex flex-wrap gap-4">
-                <motion.div
-                  whileHover={{ scale: 1.05, y: -2 }}
-                  whileTap={{ scale: 0.96 }}
-                >
+                <motion.div whileHover={{ scale: 1.03, y: -2 }} whileTap={{ scale: 0.98 }}>
                   <Link
                     to="/watch-cases"
                     className="inline-flex items-center justify-center px-7 py-3 rounded-full bg-[#9DC183] text-white font-semibold hover:bg-white hover:text-[#2f3e38] transition duration-300"
@@ -690,10 +656,7 @@ const Home = () => {
                   </Link>
                 </motion.div>
 
-                <motion.div
-                  whileHover={{ scale: 1.05, y: -2 }}
-                  whileTap={{ scale: 0.96 }}
-                >
+                <motion.div whileHover={{ scale: 1.03, y: -2 }} whileTap={{ scale: 0.98 }}>
                   <Link
                     to="/watch-chargers"
                     className="inline-flex items-center justify-center px-7 py-3 rounded-full border border-white/25 text-white font-semibold hover:bg-white hover:text-[#2f3e38] transition duration-300"
@@ -705,14 +668,14 @@ const Home = () => {
             </motion.div>
 
             <motion.div
-              variants={riseRight}
+              variants={fadeRight}
               className="relative min-h-[350px] md:min-h-[460px]"
             >
               <motion.video
-                initial={{ scale: 1.12 }}
-                whileInView={{ scale: 1 }}
-                transition={{ duration: 1 }}
-                viewport={{ once: false, amount: 0.12 }}
+                initial={{ scale: 1.05, opacity: 0.85 }}
+                whileInView={{ scale: 1, opacity: 1 }}
+                transition={{ duration: 0.8 }}
+                viewport={mobileViewport}
                 src={watchCaseVideo}
                 autoPlay
                 muted
@@ -730,9 +693,9 @@ const Home = () => {
         className="w-[94%] max-w-7xl mx-auto mt-24"
         initial="hidden"
         whileInView="show"
-        viewport={{ once: false, amount: 0.12 }}
+        viewport={mobileViewport}
       >
-        <motion.div variants={riseUp} className="text-center">
+        <motion.div variants={fadeUp} className="text-center">
           <span className="text-[11px] sm:text-xs font-semibold tracking-[0.25em] text-[#7e9d72] uppercase">
             Why Choose Snapcharge
           </span>
@@ -745,15 +708,14 @@ const Home = () => {
           variants={cardStagger}
           initial="hidden"
           whileInView="show"
-          viewport={{ once: false, amount: 0.12 }}
+          viewport={mobileViewport}
           className="mt-12 grid sm:grid-cols-2 lg:grid-cols-4 gap-6"
         >
           {featureCards.map((item) => (
             <motion.div
               key={item.no}
-              variants={zoomRise}
-              whileHover={{ y: -10, scale: 1.03 }}
-              transition={{ type: "spring", stiffness: 180, damping: 16 }}
+              variants={zoomSoft}
+              whileHover={{ y: -6, scale: 1.02 }}
               className="group rounded-[28px] bg-white border border-[#eee1d0] p-6 shadow-sm hover:shadow-lg"
             >
               <div className="w-12 h-12 rounded-2xl bg-[#9DC18322] flex items-center justify-center text-[#436056] font-bold">
@@ -775,12 +737,8 @@ const Home = () => {
           ))}
         </motion.div>
 
-        <motion.div variants={riseUpSoft} className="mt-10 text-center">
-          <motion.div
-            whileHover={{ scale: 1.05, y: -2 }}
-            whileTap={{ scale: 0.96 }}
-            className="inline-block"
-          >
+        <motion.div variants={fadeSoft} className="mt-10 text-center">
+          <motion.div whileHover={{ scale: 1.03, y: -2 }} whileTap={{ scale: 0.98 }} className="inline-block">
             <Link
               to="/premium-covers"
               className="inline-flex items-center justify-center px-7 py-3 rounded-full bg-[#2f3e38] text-white font-semibold hover:bg-[#9DC183] transition duration-300"
@@ -796,26 +754,26 @@ const Home = () => {
         className="w-[94%] max-w-7xl mx-auto mt-24"
         initial="hidden"
         whileInView="show"
-        viewport={{ once: false, amount: 0.12 }}
+        viewport={mobileViewport}
       >
         <div className="grid lg:grid-cols-[1.02fr_0.98fr] gap-8 items-center">
           <motion.div
-            variants={riseLeft}
-            whileHover={{ y: -8 }}
+            variants={fadeLeft}
+            whileHover={{ y: -4 }}
             className="relative rounded-[36px] overflow-hidden bg-white border border-[#ece0cf] shadow-[0_25px_65px_rgba(0,0,0,0.06)] min-h-[440px]"
           >
             <motion.img
-              animate={floatSoft}
+              animate={isMobile ? {} : floatSoft}
               src={chargerImg}
               alt="Charging"
               className="absolute inset-0 w-full h-full object-contain p-8 md:p-10"
             />
 
             <motion.div
-              initial={{ opacity: 0, y: 30 }}
+              initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.25, duration: 0.7 }}
-              viewport={{ once: false, amount: 0.12 }}
+              transition={{ delay: 0.2, duration: 0.6 }}
+              viewport={mobileViewport}
               className="absolute left-5 right-5 bottom-5 md:right-auto md:w-[280px]"
             >
               <div className="rounded-[24px] bg-[#2f3e38] text-white p-5 shadow-xl">
@@ -828,7 +786,7 @@ const Home = () => {
             </motion.div>
           </motion.div>
 
-          <motion.div variants={riseRight} className="px-1 md:px-6">
+          <motion.div variants={fadeRight} className="px-1 md:px-6">
             <span className="text-[11px] sm:text-xs font-semibold tracking-[0.25em] text-[#7e9d72] uppercase">
               Charging Solutions
             </span>
@@ -848,7 +806,7 @@ const Home = () => {
               variants={cardStagger}
               initial="hidden"
               whileInView="show"
-              viewport={{ once: false, amount: 0.12 }}
+              viewport={mobileViewport}
               className="mt-8 space-y-4 max-w-xl"
             >
               {[
@@ -858,8 +816,8 @@ const Home = () => {
               ].map((text) => (
                 <motion.div
                   key={text}
-                  variants={zoomRise}
-                  whileHover={{ x: 8 }}
+                  variants={zoomSoft}
+                  whileHover={{ x: 6 }}
                   className="rounded-[22px] bg-white border border-[#efe2d2] px-5 py-4 shadow-sm"
                 >
                   {text}
@@ -868,10 +826,7 @@ const Home = () => {
             </motion.div>
 
             <div className="mt-8 flex flex-wrap gap-4">
-              <motion.div
-                whileHover={{ scale: 1.05, y: -2 }}
-                whileTap={{ scale: 0.96 }}
-              >
+              <motion.div whileHover={{ scale: 1.03, y: -2 }} whileTap={{ scale: 0.98 }}>
                 <Link
                   to="/adapters"
                   className="px-7 py-3 rounded-full bg-[#2f3e38] text-white font-semibold hover:bg-[#9DC183] transition duration-300 inline-block"
@@ -880,10 +835,7 @@ const Home = () => {
                 </Link>
               </motion.div>
 
-              <motion.div
-                whileHover={{ scale: 1.05, y: -2 }}
-                whileTap={{ scale: 0.96 }}
-              >
+              <motion.div whileHover={{ scale: 1.03, y: -2 }} whileTap={{ scale: 0.98 }}>
                 <Link
                   to="/wireless-accessories"
                   className="px-7 py-3 rounded-full border border-[#436056] text-[#436056] font-semibold hover:bg-[#436056] hover:text-white transition duration-300 inline-block"
@@ -901,15 +853,15 @@ const Home = () => {
         className="mt-24"
         initial="hidden"
         whileInView="show"
-        viewport={{ once: false, amount: 0.12 }}
-        variants={zoomRise}
+        viewport={mobileViewport}
+        variants={zoomSoft}
       >
         <div className="w-[94%] max-w-7xl mx-auto relative rounded-[40px] overflow-hidden min-h-[430px] shadow-[0_25px_80px_rgba(0,0,0,0.10)]">
           <motion.img
-            initial={{ scale: 1.12 }}
-            whileInView={{ scale: 1 }}
-            transition={{ duration: 1.1 }}
-            viewport={{ once: false, amount: 0.12 }}
+            initial={{ scale: 1.04, opacity: 0.88 }}
+            whileInView={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.9 }}
+            viewport={mobileViewport}
             src={carMultiChargerImg}
             alt="Car accessories"
             className="absolute inset-0 w-full h-full object-cover"
@@ -917,7 +869,7 @@ const Home = () => {
           <div className="absolute inset-0 bg-gradient-to-r from-[#1f2925]/80 via-[#1f2925]/40 to-transparent" />
 
           <motion.div
-            variants={riseLeft}
+            variants={fadeLeft}
             className="relative z-10 h-full flex items-center px-7 sm:px-10 md:px-16 py-12"
           >
             <div className="max-w-xl text-white">
@@ -936,10 +888,7 @@ const Home = () => {
                 battery life moving with you.
               </p>
 
-              <motion.div
-                whileHover={{ scale: 1.05, y: -2 }}
-                whileTap={{ scale: 0.96 }}
-              >
+              <motion.div whileHover={{ scale: 1.03, y: -2 }} whileTap={{ scale: 0.98 }}>
                 <Link
                   to="/car-accessories"
                   className="mt-8 inline-flex items-center justify-center px-7 py-3 rounded-full bg-[#9DC183] text-white font-semibold hover:bg-white hover:text-[#2f3e38] transition duration-300"
@@ -957,9 +906,9 @@ const Home = () => {
         className="w-[94%] max-w-7xl mx-auto mt-24"
         initial="hidden"
         whileInView="show"
-        viewport={{ once: false, amount: 0.12 }}
+        viewport={mobileViewport}
       >
-        <motion.div variants={riseUp} className="text-center">
+        <motion.div variants={fadeUp} className="text-center">
           <span className="text-[11px] sm:text-xs font-semibold tracking-[0.25em] text-[#7e9d72] uppercase">
             Featured Picks
           </span>
@@ -972,20 +921,20 @@ const Home = () => {
           variants={cardStagger}
           initial="hidden"
           whileInView="show"
-          viewport={{ once: false, amount: 0.12 }}
+          viewport={mobileViewport}
           className="mt-12 grid md:grid-cols-3 gap-7"
         >
           {spotlightCards.map((item) => (
             <motion.div
               key={item.title}
-              variants={zoomRise}
-              whileHover={{ y: -10, scale: 1.02 }}
+              variants={zoomSoft}
+              whileHover={{ y: -6, scale: 1.02 }}
               className="group rounded-[30px] overflow-hidden bg-white border border-[#eee2d1] shadow-sm hover:shadow-lg transition duration-300"
             >
               <div className="h-[270px] bg-gradient-to-br from-[#f8efe4] to-[#f2e7d8] flex items-center justify-center overflow-hidden">
                 <motion.img
-                  whileHover={{ scale: 1.1, rotate: -1.5 }}
-                  transition={{ duration: 0.45 }}
+                  whileHover={{ scale: 1.05 }}
+                  transition={{ duration: 0.35 }}
                   src={item.img}
                   alt={item.title}
                   className="w-full h-full object-contain p-6"
@@ -1016,12 +965,8 @@ const Home = () => {
           ))}
         </motion.div>
 
-        <motion.div variants={riseUpSoft} className="mt-10 text-center">
-          <motion.div
-            whileHover={{ scale: 1.05, y: -2 }}
-            whileTap={{ scale: 0.96 }}
-            className="inline-block"
-          >
+        <motion.div variants={fadeSoft} className="mt-10 text-center">
+          <motion.div whileHover={{ scale: 1.03, y: -2 }} whileTap={{ scale: 0.98 }} className="inline-block">
             <Link
               to="/premium-covers"
               className="inline-flex items-center justify-center px-7 py-3 rounded-full bg-[#2f3e38] text-white font-semibold hover:bg-[#9DC183] transition duration-300"
@@ -1037,13 +982,13 @@ const Home = () => {
         className="mt-24"
         initial="hidden"
         whileInView="show"
-        viewport={{ once: false, amount: 0.12 }}
+        viewport={mobileViewport}
       >
         <motion.div
-          variants={zoomRise}
+          variants={zoomSoft}
           className="w-[94%] max-w-7xl mx-auto rounded-[40px] bg-gradient-to-r from-white to-[#f6ede0] border border-[#eadfce] shadow-[0_20px_60px_rgba(0,0,0,0.06)] px-7 sm:px-10 md:px-14 py-12 md:py-16 grid md:grid-cols-2 gap-12 items-center"
         >
-          <motion.div variants={riseLeft}>
+          <motion.div variants={fadeLeft}>
             <span className="text-[11px] sm:text-xs font-semibold tracking-[0.25em] text-[#7e9d72] uppercase">
               Best Seller
             </span>
@@ -1063,7 +1008,7 @@ const Home = () => {
               {["Soft Touch", "Easy Grip", "Minimal Finish"].map((tag) => (
                 <motion.span
                   key={tag}
-                  whileHover={{ y: -4, scale: 1.04 }}
+                  whileHover={{ y: -3, scale: 1.02 }}
                   className="px-4 py-2 rounded-full bg-white shadow-sm text-[#436056] text-sm"
                 >
                   {tag}
@@ -1072,10 +1017,7 @@ const Home = () => {
             </div>
 
             <div className="mt-8 flex flex-wrap gap-4">
-              <motion.div
-                whileHover={{ scale: 1.05, y: -2 }}
-                whileTap={{ scale: 0.96 }}
-              >
+              <motion.div whileHover={{ scale: 1.03, y: -2 }} whileTap={{ scale: 0.98 }}>
                 <Link
                   to="/silicone-covers"
                   className="px-7 py-3 rounded-full bg-[#2f3e38] text-white font-semibold hover:bg-[#9DC183] transition duration-300 inline-block"
@@ -1084,10 +1026,7 @@ const Home = () => {
                 </Link>
               </motion.div>
 
-              <motion.div
-                whileHover={{ scale: 1.05, y: -2 }}
-                whileTap={{ scale: 0.96 }}
-              >
+              <motion.div whileHover={{ scale: 1.03, y: -2 }} whileTap={{ scale: 0.98 }}>
                 <Link
                   to="/premium-covers"
                   className="px-7 py-3 rounded-full border border-[#436056] text-[#436056] font-semibold hover:bg-[#436056] hover:text-white transition duration-300 inline-block"
@@ -1099,15 +1038,15 @@ const Home = () => {
           </motion.div>
 
           <motion.div
-            variants={riseRight}
-            animate={floatSlow}
+            variants={fadeRight}
+            animate={isMobile ? {} : floatSlow}
             className="flex justify-center"
           >
             <motion.img
-              initial={{ scale: 1.14, opacity: 0.7 }}
+              initial={{ scale: 1.05, opacity: 0.85 }}
               whileInView={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 1.1, ease: smoothEase }}
-              viewport={{ once: false, amount: 0.12 }}
+              transition={{ duration: 0.9, ease: smoothEase }}
+              viewport={mobileViewport}
               src={iphoneCasesImg}
               alt="iPhone cases"
               className="w-full max-w-xl object-contain drop-shadow-[0_25px_45px_rgba(0,0,0,0.12)]"
@@ -1115,110 +1054,99 @@ const Home = () => {
           </motion.div>
         </motion.div>
       </motion.section>
+
       {/* ================= TERMS / WARRANTY ================= */}
-<motion.section
-  className="w-[94%] max-w-7xl mx-auto mt-24"
-  initial="hidden"
-  whileInView="show"
-  viewport={{ once: false, amount: 0.2 }}
-  variants={riseUp}
->
-  <div className="rounded-[34px] bg-white border border-[#eadccc] shadow-[0_20px_55px_rgba(0,0,0,0.06)] overflow-hidden">
-
-    <div className="grid md:grid-cols-3">
-
-      {/* LEFT SIDE */}
-      <motion.div
-        variants={riseLeft}
-        className="bg-[#436056] text-white px-6 py-8 md:px-8"
+      <motion.section
+        className="w-[94%] max-w-7xl mx-auto mt-24"
+        initial="hidden"
+        whileInView="show"
+        viewport={{ once: true, amount: 0.2 }}
+        variants={fadeUp}
       >
-        <p className="text-[11px] sm:text-xs font-semibold tracking-[0.25em] uppercase text-white/75">
-          SnapCharge Policy
-        </p>
+        <div className="rounded-[34px] bg-white border border-[#eadccc] shadow-[0_20px_55px_rgba(0,0,0,0.06)] overflow-hidden">
+          <div className="grid md:grid-cols-3">
+            <motion.div
+              variants={fadeLeft}
+              className="bg-[#436056] text-white px-6 py-8 md:px-8"
+            >
+              <p className="text-[11px] sm:text-xs font-semibold tracking-[0.25em] uppercase text-white/75">
+                SnapCharge Policy
+              </p>
 
-        <h2 className="mt-3 text-2xl md:text-3xl font-bold leading-tight">
-          7 Days Replacement
-          <br />
-          Warranty
-        </h2>
+              <h2 className="mt-3 text-2xl md:text-3xl font-bold leading-tight">
+                7 Days Replacement
+                <br />
+                Warranty
+              </h2>
 
-        <p className="mt-4 text-sm md:text-base leading-7 text-white/85">
-          We stand behind the quality of our products and offer an easy
-          replacement process for eligible issues.
-        </p>
-      </motion.div>
+              <p className="mt-4 text-sm md:text-base leading-7 text-white/85">
+                We stand behind the quality of our products and offer an easy
+                replacement process for eligible issues.
+              </p>
+            </motion.div>
 
-      {/* RIGHT SIDE */}
-      <motion.div
-        variants={riseRight}
-        className="md:col-span-2 px-6 py-8 md:px-8 bg-[#fffaf2]"
-      >
+            <motion.div
+              variants={fadeRight}
+              className="md:col-span-2 px-6 py-8 md:px-8 bg-[#fffaf2]"
+            >
+              <motion.div
+                variants={cardStagger}
+                initial="hidden"
+                whileInView="show"
+                viewport={{ once: true, amount: 0.2 }}
+                className="grid sm:grid-cols-2 gap-6"
+              >
+                <motion.div
+                  variants={zoomSoft}
+                  whileHover={{ y: -5, scale: 1.02 }}
+                  className="rounded-[24px] bg-white border border-[#efe3d3] p-5 shadow-sm"
+                >
+                  <h3 className="text-lg font-semibold text-[#2f3e38]">
+                    Replacement Coverage
+                  </h3>
 
-        <motion.div
-          variants={cardStagger}
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: false, amount: 0.2 }}
-          className="grid sm:grid-cols-2 gap-6"
-        >
+                  <p className="mt-3 text-sm md:text-base leading-7 text-[#46524d]">
+                    Customers can request a replacement within
+                    <span className="font-semibold text-[#436056]">
+                      {" "}7 days of delivery
+                    </span>{" "}
+                    in case of damaged product, wrong item received, or
+                    manufacturing defect.
+                  </p>
+                </motion.div>
 
-          <motion.div
-            variants={zoomRise}
-            whileHover={{ y: -8, scale: 1.03 }}
-            transition={{ type: "spring", stiffness: 180, damping: 16 }}
-            className="rounded-[24px] bg-white border border-[#efe3d3] p-5 shadow-sm"
-          >
-            <h3 className="text-lg font-semibold text-[#2f3e38]">
-              Replacement Coverage
-            </h3>
+                <motion.div
+                  variants={zoomSoft}
+                  whileHover={{ y: -5, scale: 1.02 }}
+                  className="rounded-[24px] bg-white border border-[#efe3d3] p-5 shadow-sm"
+                >
+                  <h3 className="text-lg font-semibold text-[#2f3e38]">
+                    Important Terms
+                  </h3>
 
-            <p className="mt-3 text-sm md:text-base leading-7 text-[#46524d]">
-              Customers can request a replacement within
-              <span className="font-semibold text-[#436056]">
-                {" "}7 days of delivery
-              </span>{" "}
-              in case of damaged product, wrong item received, or
-              manufacturing defect.
-            </p>
-          </motion.div>
+                  <ul className="mt-3 space-y-2 text-sm md:text-base leading-7 text-[#46524d]">
+                    <li>• No replacement for physical damage after use.</li>
+                    <li>• Product must be unused and in original condition.</li>
+                    <li>• Replacement request should be raised within 7 days.</li>
+                    <li>• Approval depends on issue verification.</li>
+                  </ul>
+                </motion.div>
+              </motion.div>
 
-          <motion.div
-            variants={zoomRise}
-            whileHover={{ y: -8, scale: 1.03 }}
-            transition={{ type: "spring", stiffness: 180, damping: 16 }}
-            className="rounded-[24px] bg-white border border-[#efe3d3] p-5 shadow-sm"
-          >
-            <h3 className="text-lg font-semibold text-[#2f3e38]">
-              Important Terms
-            </h3>
-
-            <ul className="mt-3 space-y-2 text-sm md:text-base leading-7 text-[#46524d]">
-              <li>• No replacement for physical damage after use.</li>
-              <li>• Product must be unused and in original condition.</li>
-              <li>• Replacement request should be raised within 7 days.</li>
-              <li>• Approval depends on issue verification.</li>
-            </ul>
-          </motion.div>
-
-        </motion.div>
-
-        <motion.div
-          variants={riseUpSoft}
-          className="mt-6 rounded-[24px] bg-[#FAEBD7] border border-[#eadccc] px-5 py-4"
-        >
-          <p className="text-sm md:text-base leading-7 text-[#436056]">
-            For replacement support, customers should share their order
-            details and issue images/videos with our support team. Final
-            approval will be based on product inspection and policy terms.
-          </p>
-        </motion.div>
-
-      </motion.div>
-
-    </div>
-
-  </div>
-</motion.section>
+              <motion.div
+                variants={fadeSoft}
+                className="mt-6 rounded-[24px] bg-[#FAEBD7] border border-[#eadccc] px-5 py-4"
+              >
+                <p className="text-sm md:text-base leading-7 text-[#436056]">
+                  For replacement support, customers should share their order
+                  details and issue images/videos with our support team. Final
+                  approval will be based on product inspection and policy terms.
+                </p>
+              </motion.div>
+            </motion.div>
+          </div>
+        </div>
+      </motion.section>
     </main>
   );
 };

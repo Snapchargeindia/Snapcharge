@@ -68,52 +68,26 @@ export const adapterProducts = [
     },
   },
 
-  {
-    id: 3,
-    name: "USB-C to Lightning Cable",
-    price: 599,
-    mrp: 999,
-    images: [ad7, ad8, ad9],
-    details:
-      "Reliable USB-C to Lightning cable made for fast charging and stable data transfer with a durable, long-lasting build.",
-    specs: [
-      "Fast charging compatible",
-      "High-speed data transfer",
-      "Strong reinforced ends",
-      "Flexible tangle-resistant cable",
-      "Stable charging output",
-      "Premium quality finish",
-    ],
-    variants: [
-      { label: "1 Meter", price: 599, mrp: 999 },
-      { label: "Standard", price: 599, mrp: 999 },
-    ],
-    deliveryReturn: {
-      shipping: "Free delivery on prepaid orders. Dispatch within 24-48 hours.",
-      returns: "7-day replacement for manufacturing defects only.",
-      care: "Avoid pulling from the wire directly; hold from the connector.",
-    },
-  },
+  
 
   {
-    id: 4,
-    name: "60W USB-C Charge Cable (1m)",
+    id: 3,
+    name: "60W Fast Charging – Delivers high-speed power for phones, tablets, and laptops.",
     price: 799,
     mrp: 1199,
     images: [ad10, ad11, ad12],
     details:
-      "High-performance 60W USB-C charge cable designed for fast charging and dependable use with phones, tablets and supported laptops.",
+"Dual USB-C Ports – Charge two devices at the same time.",
     specs: [
-      "60W fast charging support",
-      "USB-C to USB-C interface",
-      "1 meter convenient length",
-      "Strong and durable cable body",
-      "Stable power transmission",
-      "Daily heavy-use ready",
+      "Smart Power Distribution – Automatically balances power between connected devices.",
+      "Compact & Travel Friendly – Lightweight design for easy portability.",
+      "Over-Charge Protection – Built-in safety system to prevent overheating and short circuits.",
+      "Universal Compatibility – Works with most USB-C supported devices.",
+      
     ],
     variants: [
       { label: "60W", price: 799, mrp: 1199 },
-      { label: "1 Meter", price: 799, mrp: 1199 },
+      
     ],
     deliveryReturn: {
       shipping: "Free delivery on prepaid orders. Dispatch within 24-48 hours.",

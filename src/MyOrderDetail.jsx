@@ -16,7 +16,6 @@ const MyOrderDetail = () => {
 
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [shouldRedirectOrders, setShouldRedirectOrders] = useState(false);
 
   useEffect(() => {
     if (!token) {
@@ -34,36 +33,29 @@ const MyOrderDetail = () => {
 
         const data = await res.json();
 
-        if (!res.ok || !data.success) {
-          alert(data.message || "Order not found");
-          setShouldRedirectOrders(true);
+        if (!data.success) {
+          navigate("/my-orders");
           return;
         }
 
         setOrder(data.order);
       } catch (error) {
-        console.log("MY ORDER DETAIL ERROR:", error);
+        console.log(error);
         alert("Something went wrong");
-        setShouldRedirectOrders(true);
       } finally {
         setLoading(false);
       }
     };
 
     fetchOrder();
-  }, [id, token, navigate]);
-
-  useEffect(() => {
-    if (shouldRedirectOrders) {
-      navigate("/my-orders");
-    }
-  }, [shouldRedirectOrders, navigate]);
+  }, [id]);
 
   const activeStep = statusSteps.indexOf(order?.orderStatus);
 
   return (
     <div className="min-h-screen bg-[#FAEBD7] pt-32 pb-16 px-4 sm:px-6">
       <div className="max-w-5xl mx-auto">
+
         <button
           onClick={() => navigate("/my-orders")}
           className="mb-6 bg-white px-5 py-2 rounded-full shadow text-[#436056] font-medium"
@@ -77,8 +69,11 @@ const MyOrderDetail = () => {
           </div>
         ) : order ? (
           <div className="space-y-6">
+
+            {/* PRODUCT */}
             <div className="bg-white rounded-3xl shadow p-6">
               <div className="flex flex-col md:flex-row gap-5">
+
                 <div className="w-32 h-32 rounded-2xl bg-[#f7f7f7] overflow-hidden flex items-center justify-center">
                   {order.productImage ? (
                     <img
@@ -95,18 +90,45 @@ const MyOrderDetail = () => {
                   <h1 className="text-2xl font-bold text-[#436056]">
                     {order.productName}
                   </h1>
+
                   <p className="text-gray-500 mt-2">₹{order.amount}</p>
                   <p className="text-gray-500">Qty: {order.quantity}</p>
+
                   <p className="text-gray-500">
                     Payment: {order.paymentMethod}
                   </p>
+
                   <p className="text-gray-500">
                     Payment Status: {order.paymentStatus}
                   </p>
+
+                  {order.courierName && (
+                    <p className="text-gray-500">
+                      Courier: {order.courierName}
+                    </p>
+                  )}
+
+                  {order.awbCode && (
+                    <p className="text-gray-500">
+                      AWB: {order.awbCode}
+                    </p>
+                  )}
+
+                  {order.trackingUrl && (
+                    <button
+                      onClick={() =>
+                        window.open(order.trackingUrl, "_blank")
+                      }
+                      className="mt-3 px-5 py-2 rounded-full bg-[#9DC183] text-white font-semibold hover:bg-[#436056]"
+                    >
+                      Track Shipment
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
 
+            {/* ORDER PROGRESS */}
             <div className="bg-white rounded-3xl shadow p-6">
               <h2 className="text-xl font-bold text-[#436056] mb-5">
                 Order Progress
@@ -114,10 +136,13 @@ const MyOrderDetail = () => {
 
               <div className="overflow-x-auto">
                 <div className="min-w-[700px]">
+
                   <div className="flex items-center justify-between relative mb-3">
+
                     <div className="absolute top-4 left-0 right-0 h-1 bg-[#e5ddd0] rounded-full" />
+
                     <div
-                      className="absolute top-4 left-0 h-1 bg-[#9DC183] rounded-full transition-all duration-500"
+                      className="absolute top-4 left-0 h-1 bg-[#9DC183] rounded-full transition-all"
                       style={{
                         width: `${
                           activeStep >= 0
@@ -129,6 +154,7 @@ const MyOrderDetail = () => {
 
                     {statusSteps.map((step, index) => {
                       const completed = index <= activeStep;
+
                       return (
                         <div
                           key={step}
@@ -138,7 +164,7 @@ const MyOrderDetail = () => {
                             className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 ${
                               completed
                                 ? "bg-[#9DC183] border-[#9DC183] text-white"
-                                : "bg-white border-[#d8d8d8] text-gray-400"
+                                : "bg-white border-gray-300 text-gray-400"
                             }`}
                           >
                             {index + 1}
@@ -148,21 +174,24 @@ const MyOrderDetail = () => {
                     })}
                   </div>
 
-                  <div className="flex items-start justify-between text-xs sm:text-sm text-[#436056]">
+                  <div className="flex justify-between text-xs sm:text-sm text-[#436056]">
                     {statusSteps.map((step) => (
                       <div key={step} className="w-full text-center font-medium">
                         {step}
                       </div>
                     ))}
                   </div>
+
                 </div>
               </div>
             </div>
 
+            {/* DELIVERY */}
             <div className="bg-white rounded-3xl shadow p-6">
               <h2 className="text-xl font-bold text-[#436056] mb-4">
                 Delivery Details
               </h2>
+
               <p className="text-gray-600">{order.customerName}</p>
               <p className="text-gray-600">{order.phone}</p>
               <p className="text-gray-600">{order.address}</p>
@@ -170,6 +199,7 @@ const MyOrderDetail = () => {
                 {order.city}, {order.state} - {order.pincode}
               </p>
             </div>
+
           </div>
         ) : null}
       </div>

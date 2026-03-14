@@ -8,23 +8,95 @@ const orderSchema = new mongoose.Schema(
       default: null,
     },
 
-    customerName: { type: String, required: true },
-    phone: { type: String, required: true },
-    address: { type: String, required: true },
-    city: { type: String, default: "" },
-    state: { type: String, default: "" },
-    pincode: { type: String, default: "" },
+    customerName: {
+      type: String,
+      required: true,
+      trim: true,
+    },
 
-    productName: { type: String, required: true },
-    productId: { type: String, default: "" },
-    productImage: { type: String, default: "" },
-    variant: { type: String, default: "" },
-    quantity: { type: Number, default: 1 },
-    amount: { type: Number, required: true },
+    phone: {
+      type: String,
+      required: true,
+      trim: true,
+    },
 
-    razorpayOrderId: { type: String, default: "" },
-    razorpayPaymentId: { type: String, default: "" },
-    razorpaySignature: { type: String, default: "" },
+    address: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    city: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    state: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    pincode: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    productName: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    productId: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    productImage: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    variant: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    quantity: {
+      type: Number,
+      default: 1,
+      min: 1,
+    },
+
+    amount: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+
+    razorpayOrderId: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    razorpayPaymentId: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    razorpaySignature: {
+      type: String,
+      default: "",
+      trim: true,
+    },
 
     paymentStatus: {
       type: String,
@@ -43,8 +115,35 @@ const orderSchema = new mongoose.Schema(
       enum: ["Pending", "Confirmed", "Packed", "Shipped", "Delivered"],
       default: "Pending",
     },
+
+    shiprocketOrderId: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    awbCode: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    courierName: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    trackingUrl: {
+      type: String,
+      default: "",
+      trim: true,
+    },
   },
   { timestamps: true }
 );
 
-module.exports = mongoose.model("Order", orderSchema);
+const Order =
+  mongoose.models.Order || mongoose.model("Order", orderSchema);
+
+module.exports = Order;

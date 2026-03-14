@@ -96,6 +96,42 @@ const MyOrders = () => {
                     <p className="text-sm text-gray-500 mt-1">
                       {new Date(order.createdAt).toLocaleString()}
                     </p>
+
+                    {order.courierName && (
+                      <p className="text-sm text-gray-500 mt-1">
+                        Courier: {order.courierName}
+                      </p>
+                    )}
+
+                    {order.awbCode && (
+                      <p className="text-sm text-gray-500 mt-1">
+                        AWB: {order.awbCode}
+                      </p>
+                    )}
+
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {order.trackingUrl && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            window.open(order.trackingUrl, "_blank");
+                          }}
+                          className="px-4 py-2 rounded-full bg-[#9DC183] text-white text-sm font-semibold hover:bg-[#436056] transition"
+                        >
+                          Track Shipment
+                        </button>
+                      )}
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/my-orders/${order._id}`);
+                        }}
+                        className="px-4 py-2 rounded-full border border-[#436056] text-[#436056] text-sm font-semibold hover:bg-[#436056] hover:text-white transition"
+                      >
+                        View Details
+                      </button>
+                    </div>
                   </div>
 
                   <div className="flex items-center">

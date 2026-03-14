@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useCart } from "./CartContext";
 import logo from "./assets/logo.png";
@@ -22,9 +22,10 @@ const coverItems = [
 const watchItems = ["Watch Straps", "Watch Cases", "Watch Chargers"];
 
 const chargingItems = [
+  "Charging Cables",
+  "Adapters",
   "Power Bank",
   "Car Accessories",
-  "Adapters",
   "Wireless Accessories",
   "Laptop Accessories",
 ];
@@ -33,6 +34,9 @@ const Navbar = () => {
   const [openMenu, setOpenMenu] = useState(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [loggedInUser, setLoggedInUser] = useState(null);
+  const [profileOpen, setProfileOpen] = useState(false);
+
+  const profileRef = useRef(null);
 
   const { cartCount } = useCart();
   const navigate = useNavigate();
@@ -43,11 +47,31 @@ const Navbar = () => {
     setLoggedInUser(saved ? JSON.parse(saved) : null);
   }, [location.pathname]);
 
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (profileRef.current && !profileRef.current.contains(event.target)) {
+        setProfileOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const handleLogout = () => {
     localStorage.removeItem("snapcharge_user");
     localStorage.removeItem("snapcharge_token");
     setLoggedInUser(null);
+    setProfileOpen(false);
+    setMobileOpen(false);
     navigate("/login");
+  };
+
+  const getProfileLetter = () => {
+    if (!loggedInUser) return "U";
+    if (loggedInUser.email) return loggedInUser.email.charAt(0).toUpperCase();
+    if (loggedInUser.name) return loggedInUser.name.charAt(0).toUpperCase();
+    return "U";
   };
 
   const coverRoutes = {
@@ -73,9 +97,10 @@ const Navbar = () => {
   };
 
   const chargingRoutes = {
+    "Charging Cables": "/charging-cables",
+    Adapters: "/adapters",
     "Power Bank": "/power-bank",
     "Car Accessories": "/car-accessories",
-    Adapters: "/adapters",
     "Wireless Accessories": "/wireless-accessories",
     "Laptop Accessories": "/laptop-accessories",
   };
@@ -128,31 +153,6 @@ const Navbar = () => {
                 routes={watchRoutes}
               />
 
-              {loggedInUser ? (
-                <>
-                  <Link
-                    to="/my-orders"
-                    className="text-[#436056] hover:text-[#9DC183] transition font-semibold"
-                  >
-                    My Orders
-                  </Link>
-
-                  <button
-                    onClick={handleLogout}
-                    className="text-[#436056] hover:text-[#9DC183] transition font-semibold"
-                  >
-                    Logout
-                  </button>
-                </>
-              ) : (
-                <Link
-                  to="/login"
-                  className="text-[#436056] hover:text-[#9DC183] transition font-semibold"
-                >
-                  Login
-                </Link>
-              )}
-
               <Link
                 to="/cart"
                 className="relative rounded-full border border-[#8eb072] bg-[#9DC183] px-5 py-2 text-white font-semibold hover:bg-[#436056] hover:border-[#436056] transition shadow-sm"
@@ -164,6 +164,63 @@ const Navbar = () => {
                   </span>
                 )}
               </Link>
+
+              {loggedInUser ? (
+                <div className="relative" ref={profileRef}>
+                  <button
+                    onClick={() => setProfileOpen((prev) => !prev)}
+                    className="h-11 w-11 rounded-full bg-[#436056] text-white flex items-center justify-center font-bold text-sm overflow-hidden border border-[#9DC183] shadow-sm"
+                  >
+                    {loggedInUser.photo ? (
+                      <img
+                        src={loggedInUser.photo}
+                        alt="profile"
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      getProfileLetter()
+                    )}
+                  </button>
+
+                  {profileOpen && (
+                    <div className="absolute right-0 top-[58px] w-64 rounded-[22px] bg-[#fffaf4] border border-[#9DC183] shadow-[0_18px_35px_rgba(0,0,0,0.10)] p-4 z-[1200]">
+                      <p className="text-sm font-semibold text-[#2f3e38]">
+                        {loggedInUser.name || "SnapCharge User"}
+                      </p>
+                      <p className="text-xs text-[#436056] break-all mt-1">
+                        {loggedInUser.email}
+                      </p>
+
+                      <div className="mt-4 flex flex-col gap-2">
+                        <button
+                          onClick={() => {
+                            setProfileOpen(false);
+                            navigate("/my-orders");
+                          }}
+                          className="w-full rounded-xl bg-[#9DC183] text-white py-2.5 text-sm font-semibold hover:bg-[#436056] transition"
+                        >
+                          My Orders
+                        </button>
+
+                        <button
+                          onClick={handleLogout}
+                          className="w-full rounded-xl bg-red-400 text-white py-2.5 text-sm font-semibold hover:bg-red-500 transition"
+                        >
+                          Logout
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <Link
+                  to="/login"
+                  className="h-11 w-11 rounded-full border border-[#9DC183] bg-white/60 text-[#436056] flex items-center justify-center font-bold text-sm shadow-sm hover:bg-[#9DC183] hover:text-white transition"
+                  title="Login"
+                >
+                  U
+                </Link>
+              )}
             </nav>
 
             <div className="ml-auto md:hidden flex items-center gap-3">
@@ -178,6 +235,64 @@ const Navbar = () => {
                   </span>
                 )}
               </Link>
+
+              {loggedInUser ? (
+                <div className="relative" ref={profileRef}>
+                  <button
+                    onClick={() => setProfileOpen((prev) => !prev)}
+                    className="h-10 w-10 rounded-full bg-[#436056] text-white flex items-center justify-center font-bold text-sm overflow-hidden border border-[#9DC183] shadow-sm"
+                  >
+                    {loggedInUser.photo ? (
+                      <img
+                        src={loggedInUser.photo}
+                        alt="profile"
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      getProfileLetter()
+                    )}
+                  </button>
+
+                  {profileOpen && (
+                    <div className="absolute right-0 top-[52px] w-56 rounded-[20px] bg-[#fffaf4] border border-[#9DC183] shadow-[0_18px_35px_rgba(0,0,0,0.10)] p-4 z-[1200]">
+                      <p className="text-sm font-semibold text-[#2f3e38]">
+                        {loggedInUser.name || "SnapCharge User"}
+                      </p>
+                      <p className="text-xs text-[#436056] break-all mt-1">
+                        {loggedInUser.email}
+                      </p>
+
+                      <div className="mt-4 flex flex-col gap-2">
+                        <button
+                          onClick={() => {
+                            setProfileOpen(false);
+                            setMobileOpen(false);
+                            navigate("/my-orders");
+                          }}
+                          className="w-full rounded-xl bg-[#9DC183] text-white py-2.5 text-sm font-semibold"
+                        >
+                          My Orders
+                        </button>
+
+                        <button
+                          onClick={handleLogout}
+                          className="w-full rounded-xl bg-red-400 text-white py-2.5 text-sm font-semibold"
+                        >
+                          Logout
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <Link
+                  to="/login"
+                  className="h-10 w-10 rounded-full border border-[#9DC183] bg-white/60 text-[#436056] flex items-center justify-center font-bold text-sm shadow-sm"
+                  title="Login"
+                >
+                  U
+                </Link>
+              )}
 
               <button
                 onClick={() => setMobileOpen(!mobileOpen)}
@@ -219,7 +334,7 @@ const Navbar = () => {
                 setMobileOpen={setMobileOpen}
               />
 
-              {loggedInUser ? (
+              {loggedInUser && (
                 <>
                   <Link
                     to="/my-orders"
@@ -230,16 +345,15 @@ const Navbar = () => {
                   </Link>
 
                   <button
-                    onClick={() => {
-                      handleLogout();
-                      setMobileOpen(false);
-                    }}
+                    onClick={handleLogout}
                     className="block py-2 text-[#436056] font-medium"
                   >
                     Logout
                   </button>
                 </>
-              ) : (
+              )}
+
+              {!loggedInUser && (
                 <Link
                   to="/login"
                   onClick={() => setMobileOpen(false)}

@@ -1,20 +1,11 @@
-// src/ChargingCables.jsx
-import React, { useState } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
 import { chargingCableProducts } from "./chargingCablesData";
 import { useCart } from "./CartContext";
 
 const ChargingCables = () => {
   const navigate = useNavigate();
-
-  const [liked, setLiked] = useState([]);
   const { addToCart, cartCount } = useCart();
-
-  const toggleLike = (id) => {
-    setLiked((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    );
-  };
 
   return (
     <div className="min-h-screen bg-[#FAEBD7] pt-28 px-4 sm:px-8 lg:px-14 pb-16">
@@ -41,7 +32,7 @@ const ChargingCables = () => {
             transition-all duration-300
             overflow-hidden flex flex-col"
           >
-            <div className="relative bg-white px-6 pt-6 pb-4 flex-1 flex items-center justify-center">
+            <div className="bg-white px-6 pt-6 pb-4 flex-1 flex items-center justify-center">
               {product.images?.length > 0 && product.images[0] ? (
                 <img
                   src={product.images[0]}
@@ -53,16 +44,6 @@ const ChargingCables = () => {
                   <p className="text-sm text-[#6b7f6d]">Image coming soon</p>
                 </div>
               )}
-
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggleLike(product.id);
-                }}
-                className="absolute top-4 right-4 bg-white w-10 h-10 rounded-full shadow flex items-center justify-center text-lg"
-              >
-                {liked.includes(product.id) ? "❤️" : "🤍"}
-              </button>
             </div>
 
             <div className="px-6 pb-6 pt-3 flex flex-col gap-3">
