@@ -73,6 +73,7 @@ mongoose
 
 app.use("/api/products", require("./routes/productRoutes"));
 app.use("/api/auth", require("./routes/authRoutes"));
+app.use("/api/user", require("./routes/userRoutes"));
 app.use("/api/payment", require("./routes/paymentRoutes"));
 app.use("/api/orders", require("./routes/orderRoutes"));
 app.use("/api/track-order", require("./routes/trackOrderRoutes"));
@@ -84,10 +85,19 @@ app.use(
   require("./routes/adminRoutes")
 );
 
+/* ================= 404 HANDLER ================= */
+
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: `Route not found: ${req.method} ${req.originalUrl}`,
+  });
+});
+
 /* ================= SERVER ================= */
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, "0.0.0.0", () => { 
+app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server running on port ${PORT}`);
 });

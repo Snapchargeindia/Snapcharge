@@ -313,9 +313,123 @@ const isValidPincode = (pincode) => {
 
 /* ================= ONLINE PAYMENT ORDER ================= */
 
-router.post("/create-order", async (req, res) => {
+router.post("/create-online-order", async (req, res) => {
   try {
     console.log("ONLINE CREATE ORDER BODY:", req.body);
+
+    const razorpay = getRazorpayInstance();
+
+    if (!razorpay) {
+      return res.status(500).json({
+        success: false,
+        message: "Razorpay is not configured properly",
+      });
+    }
+
+    const user = getUserFromToken(req);
+
+    const {
+      customerName,
+      phone,
+      address,
+      city,
+      state,
+      pincode,
+      items,
+      totalAmount,
+    } = req.body;
+
+    if (
+      !customerName ||
+      !phone ||
+      !address ||
+      !city ||
+      !state ||
+      !pincode ||
+      !Array.isArray(items) ||
+      !items.length ||
+      !totalAmount
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields for online order",
+      });
+    }
+
+    if (!isValidIndianPhone(phone)) {
+      return res.status(400).json({
+        success: false,
+        message: "Only valid Indian phone numbers are allowed",
+      });
+    }
+
+    if (!isValidPincode(pincode)) {
+      return res.status(400).json({
+        success: false,
+        message: "We currently deliver only within India (invalid pincode)",
+      });
+    }
+
+    const finalAmount = Math.round(Number(totalAmount) * 100);
+
+    if (!finalAmount || Number.isNaN(finalAmount) || finalAmount <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid payment amount",
+      });
+    }
+
+    const razorpayOrder = await razorpay.orders.create({
+      amount: finalAmount,
+      currency: "INR",
+      receipt: `rcpt_${Date.now()}`,
+    });
+
+    const firstItem = items[0] || {};
+
+    const order = await Order.create({
+      userId: user?._id || null,
+      customerName,
+      phone,
+      address,
+      city,
+      state,
+      pincode,
+      productName: firstItem.productName || "Cart Order",
+      productId: firstItem.productId || "",
+      productImage: firstItem.productImage || "",
+      variant: firstItem.variant || "Default",
+      quantity: Number(firstItem.quantity || 1),
+      amount: Number(totalAmount),
+      razorpayOrderId: razorpayOrder.id,
+      paymentStatus: "created",
+      paymentMethod: "ONLINE",
+      orderStatus: "Pending",
+    });
+
+    return res.status(201).json({
+      success: true,
+      key: process.env.RAZORPAY_KEY_ID,
+      amount: razorpayOrder.amount,
+      currency: razorpayOrder.currency,
+      orderId: razorpayOrder.id,
+      razorpayOrderId: razorpayOrder.id,
+      dbOrderId: order._id,
+    });
+  } catch (error) {
+    console.log("ONLINE ORDER CREATE ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to create payment order",
+      error: error.message,
+    });
+  }
+});
+
+/* old compatibility route */
+router.post("/create-order", async (req, res) => {
+  try {
+    console.log("ONLINE CREATE ORDER BODY (OLD ROUTE):", req.body);
 
     const razorpay = getRazorpayInstance();
 
@@ -404,6 +518,7 @@ router.post("/create-order", async (req, res) => {
       key: process.env.RAZORPAY_KEY_ID,
       amount: razorpayOrder.amount,
       currency: razorpayOrder.currency,
+      orderId: razorpayOrder.id,
       razorpayOrderId: razorpayOrder.id,
       dbOrderId: order._id,
     });
