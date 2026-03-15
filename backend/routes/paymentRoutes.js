@@ -76,13 +76,25 @@ const getShiprocketToken = async () => {
       shiprocketTokenCreatedAt &&
       Date.now() - shiprocketTokenCreatedAt < 8 * 60 * 1000
     ) {
+      console.log("SHIPROCKET USING CACHED TOKEN");
       return shiprocketToken;
     }
 
     if (!process.env.SHIPROCKET_EMAIL || !process.env.SHIPROCKET_PASSWORD) {
-      console.log("SHIPROCKET CONFIG MISSING");
+      console.log("SHIPROCKET CONFIG MISSING", {
+        emailPresent: !!process.env.SHIPROCKET_EMAIL,
+        passwordPresent: !!process.env.SHIPROCKET_PASSWORD,
+      });
       return null;
     }
+
+    console.log("SHIPROCKET LOGIN ATTEMPT", {
+      emailPresent: !!process.env.SHIPROCKET_EMAIL,
+      passwordPresent: !!process.env.SHIPROCKET_PASSWORD,
+      emailPreview: process.env.SHIPROCKET_EMAIL
+        ? process.env.SHIPROCKET_EMAIL.slice(0, 5) + "***"
+        : null,
+    });
 
     const response = await axios.post(
       "https://apiv2.shiprocket.in/v1/external/auth/login",
@@ -96,13 +108,13 @@ const getShiprocketToken = async () => {
     shiprocketTokenCreatedAt = Date.now();
     shiprocketBlockedUntil = null;
 
-    console.log("SHIPROCKET TOKEN GENERATED");
+    console.log("SHIPROCKET LOGIN SUCCESS");
     return shiprocketToken;
   } catch (error) {
     const status = error.response?.status;
     const data = error.response?.data;
 
-    console.log("SHIPROCKET LOGIN ERROR:", data || error.message);
+    console.log("SHIPROCKET LOGIN ERROR FULL:", status, data || error.message);
 
     if (
       status === 403 ||
@@ -132,6 +144,8 @@ const createShiprocketShipment = async (order) => {
     });
 
     const token = await getShiprocketToken();
+
+    console.log("SHIPROCKET TOKEN RESULT:", !!token);
 
     if (!token) {
       console.log("SHIPROCKET TOKEN NOT GENERATED");
@@ -192,7 +206,7 @@ const createShiprocketShipment = async (order) => {
       weight: 0.5,
     };
 
-    console.log("SHIPROCKET PAYLOAD:", payload);
+    console.log("SHIPROCKET PAYLOAD:", JSON.stringify(payload));
 
     const response = await axios.post(
       "https://apiv2.shiprocket.in/v1/external/orders/create/adhoc",
@@ -233,7 +247,8 @@ const createShiprocketShipment = async (order) => {
         courierName = awbResponse.data?.response?.data?.courier_name || "";
       } catch (awbError) {
         console.log(
-          "SHIPROCKET AWB ERROR:",
+          "SHIPROCKET AWB ERROR FULL:",
+          awbError.response?.status,
           awbError.response?.data || awbError.message
         );
       }
@@ -255,7 +270,8 @@ const createShiprocketShipment = async (order) => {
         trackingUrl = trackResponse.data?.tracking_data?.track_url || "";
       } catch (trackError) {
         console.log(
-          "SHIPROCKET TRACK ERROR:",
+          "SHIPROCKET TRACK ERROR FULL:",
+          trackError.response?.status,
           trackError.response?.data || trackError.message
         );
       }
@@ -271,20 +287,22 @@ const createShiprocketShipment = async (order) => {
 
     return {
       shiprocketOrderId,
+      shipmentId,
       awbCode,
       courierName,
       trackingUrl,
     };
   } catch (error) {
     console.log(
-      "SHIPROCKET CREATE SHIPMENT ERROR:",
+      "SHIPROCKET CREATE SHIPMENT ERROR FULL:",
+      error.response?.status,
       error.response?.data || error.message
     );
     return null;
   }
 };
 
-/* ================= DEBUG ROUTE ================= */
+/* ================= DEBUG ROUTES ================= */
 
 router.get("/debug-check", (req, res) => {
   return res.json({
@@ -295,10 +313,28 @@ router.get("/debug-check", (req, res) => {
     jwtSecretPresent: !!process.env.JWT_SECRET,
     shiprocketEmailPresent: !!process.env.SHIPROCKET_EMAIL,
     shiprocketPasswordPresent: !!process.env.SHIPROCKET_PASSWORD,
-    razorpayKeyIdPreview: process.env.RAZORPAY_KEY_ID
-      ? process.env.RAZORPAY_KEY_ID.slice(0, 10)
+    shiprocketEmailPreview: process.env.SHIPROCKET_EMAIL
+      ? process.env.SHIPROCKET_EMAIL.slice(0, 5) + "***"
       : null,
   });
+});
+
+router.get("/test-shiprocket", async (req, res) => {
+  try {
+    const token = await getShiprocketToken();
+
+    return res.json({
+      success: true,
+      tokenGenerated: !!token,
+      shiprocketEmailPresent: !!process.env.SHIPROCKET_EMAIL,
+      shiprocketPasswordPresent: !!process.env.SHIPROCKET_PASSWORD,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
 });
 
 /* ================= VALIDATION FUNCTIONS ================= */
@@ -418,6 +454,7 @@ router.post("/create-online-order", async (req, res) => {
     });
   } catch (error) {
     console.log("ONLINE ORDER CREATE ERROR:", error);
+
     return res.status(500).json({
       success: false,
       message: "Failed to create payment order",
@@ -537,6 +574,7 @@ router.post("/create-order", async (req, res) => {
 
 router.post("/create-cod-order", async (req, res) => {
   try {
+    console.log("COD ROUTE HIT ON LIVE");
     console.log("COD BODY:", req.body);
 
     const user = getUserFromToken(req);
@@ -596,10 +634,12 @@ router.post("/create-cod-order", async (req, res) => {
       orderStatus: "Pending",
     });
 
-    console.log("COD ORDER CREATED:", order);
+    console.log("COD ORDER CREATED:", order._id);
+    console.log("ABOUT TO CALL SHIPROCKET FOR ORDER:", order._id);
 
     try {
-      await createShiprocketShipment(order);
+      const shiprocketResult = await createShiprocketShipment(order);
+      console.log("FINAL SHIPROCKET RESULT:", shiprocketResult);
     } catch (shipError) {
       console.log("COD SHIPROCKET ERROR:", shipError.message);
     }
@@ -611,7 +651,6 @@ router.post("/create-cod-order", async (req, res) => {
     });
   } catch (error) {
     console.log("COD BACKEND ERROR FULL:", error);
-    console.log("COD BACKEND ERROR MESSAGE:", error.message);
 
     return res.status(500).json({
       success: false,
@@ -682,7 +721,8 @@ router.post("/verify-payment", async (req, res) => {
 
     if (updatedOrder) {
       try {
-        await createShiprocketShipment(updatedOrder);
+        const shiprocketResult = await createShiprocketShipment(updatedOrder);
+        console.log("ONLINE FINAL SHIPROCKET RESULT:", shiprocketResult);
       } catch (shipError) {
         console.log("ONLINE SHIPROCKET ERROR:", shipError.message);
       }
