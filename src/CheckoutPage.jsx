@@ -1,19 +1,33 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useCart } from "./CartContext";
 
 const API_URL =
   import.meta.env.VITE_API_URL ||
   (window.location.hostname === "localhost"
     ? "http://localhost:5000"
     : "https://api.snapchargee.in");
-    
+
 const CheckoutPage = () => {
   const navigate = useNavigate();
+  const token = localStorage.getItem("snapcharge_token");
+  const { cartItems, cartTotal, clearCart } = useCart();
 
   const buyNowItem = useMemo(() => {
     const saved = localStorage.getItem("snapcharge_buy_now");
     return saved ? JSON.parse(saved) : null;
   }, []);
+
+  const items = useMemo(() => {
+    return buyNowItem ? [buyNowItem] : cartItems;
+  }, [buyNowItem, cartItems]);
+
+  const total = useMemo(() => {
+    if (buyNowItem) {
+      return Number(buyNowItem.price || 0) * Number(buyNowItem.quantity || 1);
+    }
+    return cartTotal;
+  }, [buyNowItem, cartTotal]);
 
   const loggedInUser = useMemo(() => {
     const savedUser = localStorage.getItem("snapcharge_user");
@@ -21,16 +35,28 @@ const CheckoutPage = () => {
   }, []);
 
   const [formData, setFormData] = useState({
-    fullName: loggedInUser?.name || "",
-    phone: loggedInUser?.phone
-      ? String(loggedInUser.phone).replace(/^\+91/, "")
-      : "",
+    fullName: "",
+    phone: "",
     address: "",
     city: "",
     state: "",
     pincode: "",
     paymentMethod: "COD",
   });
+
+  useEffect(() => {
+    if (loggedInUser) {
+      setFormData((prev) => ({
+        ...prev,
+        fullName: loggedInUser.name || "",
+        phone: loggedInUser.phone || "",
+        address: loggedInUser.addressLine || "",
+        city: loggedInUser.city || "",
+        state: loggedInUser.state || "",
+        pincode: loggedInUser.pincode || "",
+      }));
+    }
+  }, [loggedInUser]);
 
   const [loading, setLoading] = useState(false);
 
@@ -64,44 +90,32 @@ const CheckoutPage = () => {
       return false;
     }
 
-    if (!/^[6-9]\d{9}$/.test(formData.phone.trim())) {
-      alert("Please enter a valid Indian phone number");
-      return false;
-    }
-
-    if (!/^\d{6}$/.test(formData.pincode.trim())) {
-      alert(
-        "We currently deliver only within India. Please enter a valid 6-digit pincode."
-      );
-      return false;
-    }
-
-    if (!buyNowItem) {
-      alert("No product selected for order.");
-      return false;
-    }
-
     return true;
   };
 
-  const saveLocalOrderAndRedirect = (extra = {}) => {
-    const orderData = {
-      orderId: `SC${Date.now()}`,
-      customer: formData,
-      item: buyNowItem,
-      total: buyNowItem.price * (buyNowItem.quantity || 1),
-      createdAt: new Date().toISOString(),
-      ...extra,
-    };
+  const saveUserAddress = async () => {
+    if (!loggedInUser?._id) return;
 
-    localStorage.setItem("snapcharge_last_order", JSON.stringify(orderData));
-    localStorage.removeItem("snapcharge_buy_now");
-    navigate("/order-success");
+    try {
+      await fetch(`${API_URL}/api/user/update-address/${loggedInUser._id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: token ? `Bearer ${token}` : "",
+        },
+        body: JSON.stringify({
+          addressLine: formData.address,
+          city: formData.city,
+          state: formData.state,
+          pincode: formData.pincode,
+        }),
+      });
+    } catch (error) {
+      console.log("Address save error:", error);
+    }
   };
 
-  const buildPayload = () => {
-    const amount = buyNowItem.price * (buyNowItem.quantity || 1);
-
+  const buildPayloadForItem = (item) => {
     return {
       userId: loggedInUser?._id || null,
       customerName: formData.fullName,
@@ -110,12 +124,12 @@ const CheckoutPage = () => {
       city: formData.city,
       state: formData.state,
       pincode: formData.pincode,
-      productName: buyNowItem.name,
-      productId: buyNowItem.id || buyNowItem._id || "",
-      productImage: buyNowItem.image || "",
-      variant: buyNowItem.variant || buyNowItem.selectedVariant || "Default",
-      quantity: buyNowItem.quantity || 1,
-      amount,
+      productName: item.name,
+      productId: item.id || item._id || "",
+      productImage: item.image || "",
+      variant: item.variant || "Default",
+      quantity: item.quantity || 1,
+      amount: Number(item.price || 0) * Number(item.quantity || 1),
     };
   };
 
@@ -123,144 +137,39 @@ const CheckoutPage = () => {
     try {
       setLoading(true);
 
-      const payload = buildPayload();
+      await saveUserAddress(); // 👈 address database me save
 
-      const res = await fetch(`${API_URL}/api/payment/create-cod-order`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
+      for (const item of items) {
+        const payload = buildPayloadForItem(item);
 
-      const data = await res.json();
-
-      if (!res.ok || !data.success) {
-        alert(
-          `${data.message || "Failed to place COD order"}${
-            data.error ? ` - ${data.error}` : ""
-          }`
-        );
-        return;
-      }
-
-      saveLocalOrderAndRedirect({
-        paymentStatus: "COD_PENDING",
-        paymentMethod: "COD",
-        dbOrderId: data.order?._id,
-      });
-    } catch (error) {
-      console.log("COD order error:", error);
-      alert("Something went wrong while placing COD order");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleOnlinePayment = async () => {
-    try {
-      setLoading(true);
-
-      const payload = buildPayload();
-
-      const orderRes = await fetch(`${API_URL}/api/payment/create-order`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      const orderData = await orderRes.json();
-
-      if (!orderRes.ok || !orderData.success) {
-        alert(
-          `${orderData.message || "Failed to create payment order"}${
-            orderData.error ? ` - ${orderData.error}` : ""
-          }`
-        );
-        setLoading(false);
-        return;
-      }
-
-      const options = {
-        key: orderData.key,
-        amount: orderData.amount,
-        currency: orderData.currency,
-        name: "SnapCharge",
-        description: buyNowItem.name,
-        order_id: orderData.razorpayOrderId,
-        handler: async function (response) {
-          try {
-            const verifyRes = await fetch(
-              `${API_URL}/api/payment/verify-payment`,
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                  dbOrderId: orderData.dbOrderId,
-                  razorpay_order_id: response.razorpay_order_id,
-                  razorpay_payment_id: response.razorpay_payment_id,
-                  razorpay_signature: response.razorpay_signature,
-                }),
-              }
-            );
-
-            const verifyData = await verifyRes.json();
-
-            if (verifyRes.ok && verifyData.success) {
-              saveLocalOrderAndRedirect({
-                paymentStatus: "PAID",
-                paymentMethod: "ONLINE",
-                razorpayOrderId: response.razorpay_order_id,
-                razorpayPaymentId: response.razorpay_payment_id,
-              });
-            } else {
-              alert(
-                `${verifyData.message || "Payment verification failed"}${
-                  verifyData.error ? ` - ${verifyData.error}` : ""
-                }`
-              );
-            }
-          } catch (error) {
-            console.log("Verification error:", error);
-            alert("Payment verification failed");
-          } finally {
-            setLoading(false);
-          }
-        },
-        prefill: {
-          name: formData.fullName,
-          contact: formData.phone,
-        },
-        notes: {
-          address: formData.address,
-          product: buyNowItem.name,
-          country: "India",
-        },
-        theme: {
-          color: "#9DC183",
-        },
-        modal: {
-          ondismiss: function () {
-            setLoading(false);
+        const res = await fetch(`${API_URL}/api/payment/create-cod-order`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: token ? `Bearer ${token}` : "",
           },
-        },
-      };
+          body: JSON.stringify(payload),
+        });
 
-      if (!window.Razorpay) {
-        alert("Razorpay SDK not loaded");
-        setLoading(false);
-        return;
+        const data = await res.json();
+
+        if (!res.ok || !data.success) {
+          alert("Failed to place order");
+          return;
+        }
       }
 
-      const rzp = new window.Razorpay(options);
-      rzp.open();
+      if (buyNowItem) {
+        localStorage.removeItem("snapcharge_buy_now");
+      } else {
+        clearCart();
+      }
+
+      navigate("/order-success", { replace: true });
     } catch (error) {
-      console.log("Payment error:", error);
-      alert("Something went wrong while initiating payment");
+      console.log(error);
+      alert("Order failed");
+    } finally {
       setLoading(false);
     }
   };
@@ -272,199 +181,115 @@ const CheckoutPage = () => {
 
     if (formData.paymentMethod === "COD") {
       await handleCODOrder();
-    } else {
-      await handleOnlinePayment();
     }
   };
 
-  if (!buyNowItem) {
+  if (!items.length) {
     return (
-      <div className="min-h-screen bg-[#FAEBD7] pt-32 px-4 sm:px-6 flex items-center justify-center">
-        <div className="bg-white p-8 rounded-3xl shadow text-center max-w-md w-full">
-          <h2 className="text-2xl font-bold text-[#436056] mb-3">
-            No product selected
-          </h2>
-          <p className="text-gray-600 mb-5">
-            Please use the Book Now button from a product page.
-          </p>
-          <button
-            onClick={() => navigate("/")}
-            className="bg-[#9DC183] text-white px-6 py-3 rounded-full font-semibold hover:bg-[#436056] transition"
-          >
-            Go to Home
-          </button>
-        </div>
+      <div className="min-h-screen flex items-center justify-center">
+        Cart Empty
       </div>
     );
   }
 
-  const total = buyNowItem.price * (buyNowItem.quantity || 1);
-
   return (
-    <div className="min-h-screen bg-[#FAEBD7] pt-32 pb-16 px-4 sm:px-6">
-      <div className="max-w-6xl mx-auto grid lg:grid-cols-[1.3fr,0.8fr] gap-8">
-        <div className="bg-white rounded-3xl shadow p-6 sm:p-8">
-          <h1 className="text-3xl font-bold text-[#436056] mb-2">Checkout</h1>
-          <p className="text-sm text-[#436056] mb-6">
-            We currently deliver only within India.
-          </p>
+    <div className="min-h-screen bg-[#FAEBD7] pt-32 pb-16 px-4">
+      <div className="max-w-7xl mx-auto grid lg:grid-cols-[1.5fr,0.8fr] gap-10">
+
+        <div className="bg-white rounded-3xl shadow p-8">
+          <h1 className="text-3xl font-bold text-[#436056] mb-6">Checkout</h1>
 
           <form onSubmit={handlePlaceOrder} className="space-y-4">
+
             <input
               type="text"
               name="fullName"
               placeholder="Full Name"
               value={formData.fullName}
               onChange={handleChange}
-              className="w-full border border-[#ddd] rounded-xl px-4 py-3 outline-none focus:border-[#9DC183]"
+              className="w-full border rounded-xl px-4 py-3"
             />
 
             <input
               type="text"
               name="phone"
-              placeholder="Phone Number"
+              placeholder="Phone"
               value={formData.phone}
               onChange={handleChange}
-              maxLength={10}
-              className="w-full border border-[#ddd] rounded-xl px-4 py-3 outline-none focus:border-[#9DC183]"
+              className="w-full border rounded-xl px-4 py-3"
             />
 
             <textarea
               name="address"
-              placeholder="Full Address"
+              placeholder="Address"
               value={formData.address}
               onChange={handleChange}
-              rows="4"
-              className="w-full border border-[#ddd] rounded-xl px-4 py-3 outline-none focus:border-[#9DC183]"
+              rows="3"
+              className="w-full border rounded-xl px-4 py-3"
             />
 
-            <div className="grid sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <input
-                type="text"
                 name="city"
                 placeholder="City"
                 value={formData.city}
                 onChange={handleChange}
-                className="w-full border border-[#ddd] rounded-xl px-4 py-3 outline-none focus:border-[#9DC183]"
+                className="border rounded-xl px-4 py-3"
               />
 
               <input
-                type="text"
                 name="state"
                 placeholder="State"
                 value={formData.state}
                 onChange={handleChange}
-                className="w-full border border-[#ddd] rounded-xl px-4 py-3 outline-none focus:border-[#9DC183]"
+                className="border rounded-xl px-4 py-3"
               />
             </div>
 
             <input
-              type="text"
               name="pincode"
               placeholder="Pincode"
               value={formData.pincode}
               onChange={handleChange}
-              maxLength={6}
-              className="w-full border border-[#ddd] rounded-xl px-4 py-3 outline-none focus:border-[#9DC183]"
+              className="w-full border rounded-xl px-4 py-3"
             />
-
-            <input
-              type="text"
-              value="India"
-              disabled
-              className="w-full border border-[#ddd] rounded-xl px-4 py-3 bg-gray-100 text-gray-500"
-            />
-
-            <div>
-              <p className="text-sm font-semibold text-[#436056] mb-2">
-                Payment Method
-              </p>
-
-              <div className="flex flex-col gap-2 text-sm text-[#436056]">
-                <label className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    name="paymentMethod"
-                    value="COD"
-                    checked={formData.paymentMethod === "COD"}
-                    onChange={handleChange}
-                  />
-                  Cash on Delivery
-                </label>
-
-                <label className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    name="paymentMethod"
-                    value="Online"
-                    checked={formData.paymentMethod === "Online"}
-                    onChange={handleChange}
-                  />
-                  Online Payment
-                </label>
-              </div>
-            </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full mt-4 bg-[#9DC183] text-white py-3 rounded-full font-semibold hover:bg-[#436056] transition disabled:opacity-60"
+              className="w-full bg-[#9DC183] text-white py-3 rounded-full font-semibold"
             >
-              {loading
-                ? "Please wait..."
-                : formData.paymentMethod === "Online"
-                ? `Pay Now ₹${total}`
-                : "Place Order"}
+              {loading ? "Processing..." : `Place Order ₹${total}`}
             </button>
+
           </form>
         </div>
 
-        <div className="bg-white rounded-3xl shadow p-6 h-fit">
-          <h2 className="text-2xl font-bold text-[#436056] mb-5">
-            Order Summary
-          </h2>
+        <div className="bg-white rounded-3xl shadow p-6">
+          <h2 className="text-xl font-bold mb-4">Order Summary</h2>
 
-          <div className="flex gap-3 border-b pb-4">
-            <img
-              src={buyNowItem.image}
-              alt={buyNowItem.name}
-              className="w-20 h-20 object-contain rounded-lg bg-[#f8f8f8]"
-            />
+          {items.map((item) => (
+            <div key={item.id} className="flex gap-3 mb-4">
+              <img
+                src={item.image}
+                alt=""
+                className="w-20 h-20 object-contain"
+              />
 
-            <div className="flex-1">
-              <p className="font-semibold text-[#436056] text-sm">
-                {buyNowItem.name}
-              </p>
-
-              {buyNowItem.subtitle && (
-                <p className="text-xs text-gray-500 mt-1">
-                  {buyNowItem.subtitle}
-                </p>
-              )}
-
-              {buyNowItem.variant && (
-                <p className="text-xs text-gray-500 mt-1">
-                  Variant: {buyNowItem.variant}
-                </p>
-              )}
-
-              <p className="text-sm text-gray-600 mt-2">
-                Qty: {buyNowItem.quantity || 1}
-              </p>
-
-              <p className="text-sm font-semibold text-[#436056] mt-1">
-                ₹{buyNowItem.price}
-              </p>
+              <div>
+                <p className="font-semibold">{item.name}</p>
+                <p>₹{item.price}</p>
+                <p>Qty: {item.quantity}</p>
+              </div>
             </div>
-          </div>
+          ))}
 
-          <div className="pt-5 mt-5 border-t">
-            <div className="flex justify-between text-lg font-bold text-[#436056]">
-              <span>Total</span>
-              <span>₹{total}</span>
-            </div>
+          <div className="border-t pt-4 flex justify-between font-bold">
+            <span>Total</span>
+            <span>₹{total}</span>
           </div>
         </div>
+
       </div>
     </div>
   );

@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "./CartContext";
-import { requireUserLogin } from "./authGuard";
 
 const ProductDetailLayout = ({
   product,
@@ -99,48 +98,42 @@ const ProductDetailLayout = ({
   const finalPrice = selectedVariant?.price ?? product.price ?? 0;
   const finalMrp = selectedVariant?.mrp ?? product.mrp ?? 0;
 
+  const currentItem = {
+    id: `${product.id || product._id}-${selectedVariant?.label || "default"}`,
+    name: selectedVariant?.label
+      ? `${title || product.name} (${selectedVariant.label})`
+      : title || product.name,
+    price: finalPrice,
+    image: selectedImage || product.image || product.images?.[0] || "",
+    subtitle: finalDetails,
+    quantity: 1,
+    variant: selectedVariant?.label || "Default",
+  };
+
   const handleAddToCart = () => {
-    const allowed = requireUserLogin(
-      navigate,
-      "Please login first to add items to cart"
-    );
-
-    if (!allowed) return;
-
-    addToCart({
-      id: `${product.id || product._id}-${selectedVariant?.label || "default"}`,
-      name: selectedVariant?.label
-        ? `${title || product.name} (${selectedVariant.label})`
-        : title || product.name,
-      price: finalPrice,
-      image: selectedImage || product.image || product.images?.[0] || "",
-      subtitle: finalDetails,
-      quantity: 1,
-      variant: selectedVariant?.label || "Default",
-    });
+    addToCart(currentItem);
+    alert("Item added to cart");
   };
 
   const handleBuyNow = () => {
-    const allowed = requireUserLogin(
-      navigate,
-      "Please login first to continue with booking"
-    );
-
-    if (!allowed) return;
+    const user = localStorage.getItem("snapcharge_user");
+    const token = localStorage.getItem("snapcharge_token");
 
     const buyNowItem = {
+      ...currentItem,
       id: `${product.id || product._id}-${selectedVariant?.label || "default"}-buynow`,
-      name: selectedVariant?.label
-        ? `${title || product.name} (${selectedVariant.label})`
-        : title || product.name,
-      price: finalPrice,
-      image: selectedImage || product.image || product.images?.[0] || "",
-      subtitle: finalDetails,
-      quantity: 1,
-      variant: selectedVariant?.label || "Default",
     };
 
     localStorage.setItem("snapcharge_buy_now", JSON.stringify(buyNowItem));
+
+    if (!user || !token) {
+      navigate("/login", {
+        replace: true,
+        state: { from: "/checkout" },
+      });
+      return;
+    }
+
     navigate("/checkout");
   };
 
@@ -227,7 +220,8 @@ const ProductDetailLayout = ({
                       key={color.name}
                       type="button"
                       onClick={() =>
-                        color.targetId && navigate(`${relatedPath}/${color.targetId}`)
+                        color.targetId &&
+                        navigate(`${relatedPath}/${color.targetId}`)
                       }
                       className="flex flex-col items-center gap-2"
                     >

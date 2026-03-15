@@ -35,13 +35,6 @@ router.post("/signup", async (req, res) => {
       });
     }
 
-    if (String(password).length < 6) {
-      return res.status(400).json({
-        success: false,
-        message: "Password must be at least 6 characters",
-      });
-    }
-
     const existingUser = await User.findOne({ email: normalizedEmail });
 
     if (existingUser) {
@@ -61,20 +54,24 @@ router.post("/signup", async (req, res) => {
     });
 
     const token = jwt.sign(
-      { _id: user._id, email: user.email },
+      { _id: user._id },
       JWT_SECRET,
       { expiresIn: "7d" }
     );
 
     return res.status(201).json({
       success: true,
-      message: "Signup successful",
       token,
       user: {
         _id: user._id,
         name: user.name,
         email: user.email,
         phone: user.phone,
+        addressLine: user.addressLine || "",
+        city: user.city || "",
+        state: user.state || "",
+        pincode: user.pincode || "",
+        country: user.country || "India",
       },
     });
   } catch (error) {
@@ -83,7 +80,6 @@ router.post("/signup", async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Signup failed",
-      error: error.message,
     });
   }
 });
@@ -95,13 +91,6 @@ router.post("/login", async (req, res) => {
     const { email, password } = req.body;
 
     const JWT_SECRET = process.env.JWT_SECRET || "snapcharge_user_secret";
-
-    if (!email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: "Please fill all fields",
-      });
-    }
 
     const normalizedEmail = String(email).trim().toLowerCase();
 
@@ -124,20 +113,24 @@ router.post("/login", async (req, res) => {
     }
 
     const token = jwt.sign(
-      { _id: user._id, email: user.email },
+      { _id: user._id },
       JWT_SECRET,
       { expiresIn: "7d" }
     );
 
     return res.status(200).json({
       success: true,
-      message: "Login successful",
       token,
       user: {
         _id: user._id,
         name: user.name,
         email: user.email,
         phone: user.phone,
+        addressLine: user.addressLine || "",
+        city: user.city || "",
+        state: user.state || "",
+        pincode: user.pincode || "",
+        country: user.country || "India",
       },
     });
   } catch (error) {
@@ -146,7 +139,6 @@ router.post("/login", async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Login failed",
-      error: error.message,
     });
   }
 });

@@ -21,6 +21,7 @@ const statusOptions = [
   "Confirmed",
   "Packed",
   "Shipped",
+  "Out for Delivery",
   "Delivered",
 ];
 
@@ -36,6 +37,7 @@ const AdminPanel = () => {
   const [actionLoadingId, setActionLoadingId] = useState("");
   const [showNewOrderPopup, setShowNewOrderPopup] = useState(false);
   const [latestOrder, setLatestOrder] = useState(null);
+  const [dateInputs, setDateInputs] = useState({});
 
   const previousOrderCount = useRef(0);
   const isFirstLoad = useRef(true);
@@ -44,6 +46,29 @@ const AdminPanel = () => {
     sessionStorage.removeItem("snapcharge_admin_token");
     sessionStorage.removeItem("snapcharge_admin_email");
     navigate("/admin-login");
+  };
+
+  const toDateInput = (dateValue) => {
+    if (!dateValue) return "";
+    const d = new Date(dateValue);
+    if (Number.isNaN(d.getTime())) return "";
+    return d.toISOString().slice(0, 16);
+  };
+
+  const buildDateInputsFromOrders = (ordersList) => {
+    const next = {};
+    ordersList.forEach((order) => {
+      next[order._id] = {
+        confirmedAt: toDateInput(order.confirmedAt),
+        packedAt: toDateInput(order.packedAt),
+        shippedAt: toDateInput(order.shippedAt),
+        outForDeliveryAt: toDateInput(order.outForDeliveryAt),
+        deliveredAt: toDateInput(order.deliveredAt),
+        expectedShipDate: toDateInput(order.expectedShipDate),
+        expectedDeliveryDate: toDateInput(order.expectedDeliveryDate),
+      };
+    });
+    return next;
   };
 
   const fetchOrders = async (showPopupForNew = false) => {
@@ -71,6 +96,7 @@ const AdminPanel = () => {
         previousOrderCount.current = newOrders.length;
         setOrders(newOrders);
         setFilteredOrders(newOrders);
+        setDateInputs(buildDateInputsFromOrders(newOrders));
       } else {
         if (res.status === 401) {
           handleLogout();
@@ -98,7 +124,7 @@ const AdminPanel = () => {
 
     setLoading(true);
     fetchOrders(false);
-  }, []);
+  }, [token, navigate]);
 
   useEffect(() => {
     if (!token) return;
@@ -182,9 +208,21 @@ const AdminPanel = () => {
     }));
   }, [orders]);
 
+  const handleDateChange = (orderId, field, value) => {
+    setDateInputs((prev) => ({
+      ...prev,
+      [orderId]: {
+        ...(prev[orderId] || {}),
+        [field]: value,
+      },
+    }));
+  };
+
   const handleStatusUpdate = async (orderId, status) => {
     try {
       setActionLoadingId(orderId);
+
+      const input = dateInputs[orderId] || {};
 
       const res = await fetch(`${API_URL}/api/admin/orders/${orderId}/status`, {
         method: "PUT",
@@ -192,17 +230,37 @@ const AdminPanel = () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({
+          status,
+          confirmedAt: input.confirmedAt || null,
+          packedAt: input.packedAt || null,
+          shippedAt: input.shippedAt || null,
+          outForDeliveryAt: input.outForDeliveryAt || null,
+          deliveredAt: input.deliveredAt || null,
+          expectedShipDate: input.expectedShipDate || null,
+          expectedDeliveryDate: input.expectedDeliveryDate || null,
+        }),
       });
 
       const data = await res.json();
 
       if (data.success) {
         setOrders((prev) =>
-          prev.map((order) =>
-            order._id === orderId ? { ...order, orderStatus: status } : order
-          )
+          prev.map((order) => (order._id === orderId ? data.order : order))
         );
+
+        setDateInputs((prev) => ({
+          ...prev,
+          [orderId]: {
+            confirmedAt: toDateInput(data.order.confirmedAt),
+            packedAt: toDateInput(data.order.packedAt),
+            shippedAt: toDateInput(data.order.shippedAt),
+            outForDeliveryAt: toDateInput(data.order.outForDeliveryAt),
+            deliveredAt: toDateInput(data.order.deliveredAt),
+            expectedShipDate: toDateInput(data.order.expectedShipDate),
+            expectedDeliveryDate: toDateInput(data.order.expectedDeliveryDate),
+          },
+        }));
       } else {
         if (res.status === 401) {
           handleLogout();
@@ -267,6 +325,8 @@ const AdminPanel = () => {
     switch (status) {
       case "Delivered":
         return "bg-green-100 text-green-700";
+      case "Out for Delivery":
+        return "bg-pink-100 text-pink-700";
       case "Shipped":
         return "bg-blue-100 text-blue-700";
       case "Packed":
@@ -291,7 +351,7 @@ const AdminPanel = () => {
                 <p className="text-sm text-gray-600 mt-1">
                   {latestOrder.customerName}
                 </p>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-gray-500 mt-1">
                   {latestOrder.productName}
                 </p>
                 <p className="text-sm font-semibold text-[#436056] mt-1">
@@ -437,7 +497,7 @@ const AdminPanel = () => {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[1200px]">
+              <table className="w-full min-w-[1900px]">
                 <thead className="bg-[#f7f5f1]">
                   <tr className="text-left text-sm text-[#436056]">
                     <th className="px-4 py-4">Customer</th>
@@ -445,8 +505,9 @@ const AdminPanel = () => {
                     <th className="px-4 py-4">Product</th>
                     <th className="px-4 py-4">Amount</th>
                     <th className="px-4 py-4">Payment</th>
+                    <th className="px-4 py-4">Dates</th>
                     <th className="px-4 py-4">Status</th>
-                    <th className="px-4 py-4">Date</th>
+                    <th className="px-4 py-4">Created</th>
                     <th className="px-4 py-4">Action</th>
                   </tr>
                 </thead>
@@ -488,6 +549,142 @@ const AdminPanel = () => {
                         >
                           {order.paymentMethod} / {order.paymentStatus}
                         </span>
+                      </td>
+
+                      <td className="px-4 py-4 min-w-[320px]">
+                        <div className="grid grid-cols-1 gap-3">
+                          <div>
+                            <label className="block text-xs text-gray-500 mb-1">
+                              Confirmed Date
+                            </label>
+                            <input
+                              type="datetime-local"
+                              value={dateInputs[order._id]?.confirmedAt || ""}
+                              onChange={(e) =>
+                                handleDateChange(
+                                  order._id,
+                                  "confirmedAt",
+                                  e.target.value
+                                )
+                              }
+                              className="w-full border border-[#ddd] rounded-lg px-3 py-2 text-xs outline-none focus:border-[#9DC183]"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-xs text-gray-500 mb-1">
+                              Packed Date
+                            </label>
+                            <input
+                              type="datetime-local"
+                              value={dateInputs[order._id]?.packedAt || ""}
+                              onChange={(e) =>
+                                handleDateChange(
+                                  order._id,
+                                  "packedAt",
+                                  e.target.value
+                                )
+                              }
+                              className="w-full border border-[#ddd] rounded-lg px-3 py-2 text-xs outline-none focus:border-[#9DC183]"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-xs text-gray-500 mb-1">
+                              Shipped Date
+                            </label>
+                            <input
+                              type="datetime-local"
+                              value={dateInputs[order._id]?.shippedAt || ""}
+                              onChange={(e) =>
+                                handleDateChange(
+                                  order._id,
+                                  "shippedAt",
+                                  e.target.value
+                                )
+                              }
+                              className="w-full border border-[#ddd] rounded-lg px-3 py-2 text-xs outline-none focus:border-[#9DC183]"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-xs text-gray-500 mb-1">
+                              Out For Delivery Date
+                            </label>
+                            <input
+                              type="datetime-local"
+                              value={
+                                dateInputs[order._id]?.outForDeliveryAt || ""
+                              }
+                              onChange={(e) =>
+                                handleDateChange(
+                                  order._id,
+                                  "outForDeliveryAt",
+                                  e.target.value
+                                )
+                              }
+                              className="w-full border border-[#ddd] rounded-lg px-3 py-2 text-xs outline-none focus:border-[#9DC183]"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-xs text-gray-500 mb-1">
+                              Delivered Date
+                            </label>
+                            <input
+                              type="datetime-local"
+                              value={dateInputs[order._id]?.deliveredAt || ""}
+                              onChange={(e) =>
+                                handleDateChange(
+                                  order._id,
+                                  "deliveredAt",
+                                  e.target.value
+                                )
+                              }
+                              className="w-full border border-[#ddd] rounded-lg px-3 py-2 text-xs outline-none focus:border-[#9DC183]"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-xs text-gray-500 mb-1">
+                              Expected Ship Date
+                            </label>
+                            <input
+                              type="datetime-local"
+                              value={
+                                dateInputs[order._id]?.expectedShipDate || ""
+                              }
+                              onChange={(e) =>
+                                handleDateChange(
+                                  order._id,
+                                  "expectedShipDate",
+                                  e.target.value
+                                )
+                              }
+                              className="w-full border border-[#ddd] rounded-lg px-3 py-2 text-xs outline-none focus:border-[#9DC183]"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-xs text-gray-500 mb-1">
+                              Expected Delivery Date
+                            </label>
+                            <input
+                              type="datetime-local"
+                              value={
+                                dateInputs[order._id]?.expectedDeliveryDate || ""
+                              }
+                              onChange={(e) =>
+                                handleDateChange(
+                                  order._id,
+                                  "expectedDeliveryDate",
+                                  e.target.value
+                                )
+                              }
+                              className="w-full border border-[#ddd] rounded-lg px-3 py-2 text-xs outline-none focus:border-[#9DC183]"
+                            />
+                          </div>
+                        </div>
                       </td>
 
                       <td className="px-4 py-4">

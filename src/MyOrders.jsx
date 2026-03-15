@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-const API_URL =
+const API_BASE =
   import.meta.env.VITE_API_URL ||
   (window.location.hostname === "localhost"
     ? "http://localhost:5000"
@@ -9,26 +9,39 @@ const API_URL =
 
 const MyOrders = () => {
   const navigate = useNavigate();
+
   const token = localStorage.getItem("snapcharge_token");
+  const user = localStorage.getItem("snapcharge_user");
+
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const getImageUrl = (image) => {
+    if (!image) return "";
+    if (image.startsWith("http://") || image.startsWith("https://")) return image;
+    if (image.startsWith("/")) return image;
+    return `/${image}`;
+  };
+
   const fetchOrders = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/orders`, {
+      const res = await fetch(`${API_BASE}/api/orders`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
 
+      if (res.status === 401) {
+        localStorage.removeItem("snapcharge_token");
+        localStorage.removeItem("snapcharge_user");
+        navigate("/login");
+        return;
+      }
+
       const data = await res.json();
 
       if (!res.ok || !data.success) {
-        alert(
-          `${data.message || "Failed to fetch orders"}${
-            data.error ? ` - ${data.error}` : ""
-          }`
-        );
+        alert(data.message || "Failed to fetch orders");
         return;
       }
 
@@ -42,13 +55,13 @@ const MyOrders = () => {
   };
 
   useEffect(() => {
-    if (!token) {
+    if (!token || !user) {
       navigate("/login");
       return;
     }
 
     fetchOrders();
-  }, []);
+  }, [token, user, navigate]);
 
   return (
     <div className="min-h-screen bg-[#FAEBD7] pt-32 pb-16 px-4 sm:px-6">
@@ -72,10 +85,11 @@ const MyOrders = () => {
                 className="bg-white rounded-3xl shadow p-5 cursor-pointer hover:shadow-lg transition"
               >
                 <div className="flex flex-col sm:flex-row gap-4">
+
                   <div className="w-24 h-24 rounded-2xl bg-[#f7f7f7] overflow-hidden flex items-center justify-center">
                     {order.productImage ? (
                       <img
-                        src={order.productImage}
+                        src={getImageUrl(order.productImage)}
                         alt={order.productName}
                         className="w-full h-full object-contain"
                       />
@@ -92,6 +106,12 @@ const MyOrders = () => {
                     <p className="text-sm text-gray-500 mt-1">
                       ₹{order.amount} • Qty: {order.quantity}
                     </p>
+
+                    {order.variant && (
+                      <p className="text-sm text-gray-500 mt-1">
+                        Variant: {order.variant}
+                      </p>
+                    )}
 
                     <p className="text-sm text-gray-500 mt-1">
                       {new Date(order.createdAt).toLocaleString()}
@@ -110,6 +130,7 @@ const MyOrders = () => {
                     )}
 
                     <div className="mt-3 flex flex-wrap gap-2">
+
                       {order.trackingUrl && (
                         <button
                           onClick={(e) => {
@@ -131,6 +152,7 @@ const MyOrders = () => {
                       >
                         View Details
                       </button>
+
                     </div>
                   </div>
 
@@ -139,6 +161,7 @@ const MyOrders = () => {
                       {order.orderStatus}
                     </span>
                   </div>
+
                 </div>
               </div>
             ))}

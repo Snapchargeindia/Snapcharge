@@ -4,10 +4,16 @@ export const requireUserLogin = (
   redirectTo = "/login"
 ) => {
   const user = localStorage.getItem("snapcharge_user");
+  const token = localStorage.getItem("snapcharge_token");
 
-  if (!user) {
+  if (!user || !token) {
     alert(message);
-    navigate(redirectTo, { replace: true });
+
+    navigate(redirectTo, {
+      replace: true,
+      state: { from: window.location.pathname },
+    });
+
     return false;
   }
 

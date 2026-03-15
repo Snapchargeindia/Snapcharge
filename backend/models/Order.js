@@ -139,6 +139,41 @@ const orderSchema = new mongoose.Schema(
       default: "",
       trim: true,
     },
+
+    confirmedAt: {
+      type: Date,
+      default: null,
+    },
+
+    packedAt: {
+      type: Date,
+      default: null,
+    },
+
+    shippedAt: {
+      type: Date,
+      default: null,
+    },
+
+    outForDeliveryAt: {
+      type: Date,
+      default: null,
+    },
+
+    deliveredAt: {
+      type: Date,
+      default: null,
+    },
+
+    expectedShipDate: {
+      type: Date,
+      default: null,
+    },
+
+    expectedDeliveryDate: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true }
 );

@@ -214,7 +214,7 @@ const Footer = () => {
                 </a>
               </p>
 
-              <p>Mon - Sat | 10:00 AM - 8:00 PM</p>
+              <p>24*7 customer support available</p>
             </div>
           </div>
         </div>
@@ -224,7 +224,7 @@ const Footer = () => {
       <div className="border-t border-white/10">
         <div className="w-[94%] max-w-7xl mx-auto py-5 flex flex-col md:flex-row items-center justify-between gap-3 text-sm text-white/55">
           <p>© 2026 SNAPCHARGE. All rights reserved.</p>
-          <p>Designed with premium style.</p>
+          
         </div>
       </div>
     </footer>
