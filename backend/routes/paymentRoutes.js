@@ -80,27 +80,27 @@ const getShiprocketToken = async () => {
       return shiprocketToken;
     }
 
-    if (!process.env.SHIPROCKET_EMAIL || !process.env.SHIPROCKET_PASSWORD) {
-      console.log("SHIPROCKET CONFIG MISSING", {
-        emailPresent: !!process.env.SHIPROCKET_EMAIL,
-        passwordPresent: !!process.env.SHIPROCKET_PASSWORD,
+    if (
+      !process.env.SHIPROCKET_API_KEY ||
+      !process.env.SHIPROCKET_SECRET_KEY
+    ) {
+      console.log("SHIPROCKET API CONFIG MISSING", {
+        apiKeyPresent: !!process.env.SHIPROCKET_API_KEY,
+        secretKeyPresent: !!process.env.SHIPROCKET_SECRET_KEY,
       });
       return null;
     }
 
-    console.log("SHIPROCKET LOGIN ATTEMPT", {
-      emailPresent: !!process.env.SHIPROCKET_EMAIL,
-      passwordPresent: !!process.env.SHIPROCKET_PASSWORD,
-      emailPreview: process.env.SHIPROCKET_EMAIL
-        ? process.env.SHIPROCKET_EMAIL.slice(0, 5) + "***"
-        : null,
+    console.log("SHIPROCKET API LOGIN ATTEMPT", {
+      apiKeyPresent: !!process.env.SHIPROCKET_API_KEY,
+      secretKeyPresent: !!process.env.SHIPROCKET_SECRET_KEY,
     });
 
     const response = await axios.post(
       "https://apiv2.shiprocket.in/v1/external/auth/login",
       {
-        email: process.env.SHIPROCKET_EMAIL,
-        password: process.env.SHIPROCKET_PASSWORD,
+        api_key: process.env.SHIPROCKET_API_KEY,
+        api_secret: process.env.SHIPROCKET_SECRET_KEY,
       }
     );
 
@@ -311,11 +311,8 @@ router.get("/debug-check", (req, res) => {
     razorpayKeySecretPresent: !!process.env.RAZORPAY_KEY_SECRET,
     mongoUriPresent: !!process.env.MONGO_URI,
     jwtSecretPresent: !!process.env.JWT_SECRET,
-    shiprocketEmailPresent: !!process.env.SHIPROCKET_EMAIL,
-    shiprocketPasswordPresent: !!process.env.SHIPROCKET_PASSWORD,
-    shiprocketEmailPreview: process.env.SHIPROCKET_EMAIL
-      ? process.env.SHIPROCKET_EMAIL.slice(0, 5) + "***"
-      : null,
+    shiprocketApiKeyPresent: !!process.env.SHIPROCKET_API_KEY,
+    shiprocketSecretKeyPresent: !!process.env.SHIPROCKET_SECRET_KEY,
   });
 });
 
@@ -326,8 +323,8 @@ router.get("/test-shiprocket", async (req, res) => {
     return res.json({
       success: true,
       tokenGenerated: !!token,
-      shiprocketEmailPresent: !!process.env.SHIPROCKET_EMAIL,
-      shiprocketPasswordPresent: !!process.env.SHIPROCKET_PASSWORD,
+      shiprocketApiKeyPresent: !!process.env.SHIPROCKET_API_KEY,
+      shiprocketSecretKeyPresent: !!process.env.SHIPROCKET_SECRET_KEY,
     });
   } catch (error) {
     return res.status(500).json({
