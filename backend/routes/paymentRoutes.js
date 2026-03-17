@@ -34,14 +34,11 @@ const getRazorpayInstance = () => {
 
 /* ================= SHIPROCKET AUTH & SHIPMENT ================= */
 
-// Token cache to avoid multiple logins
-let shiprocketToken = null;
-
 const createShiprocketShipment = async (order) => {
   try {
     console.log("SHIPROCKET PROCESS START FOR:", order._id);
 
-    // 1. Login to get Token (Using Email/Pass as per your first screenshot)
+    // 1. Login to get Token
     const loginRes = await axios.post("https://apiv2.shiprocket.in/v1/external/auth/login", {
       email: process.env.SHIPROCKET_EMAIL,
       password: process.env.SHIPROCKET_PASSWORD,
@@ -50,11 +47,11 @@ const createShiprocketShipment = async (order) => {
     const token = loginRes.data.token;
     if (!token) throw new Error("Token generation failed");
 
-    // 2. Prepare Payload (Matching your Order Model)
+    // 2. Prepare Payload
     const payload = {
       order_id: order._id.toString(),
       order_date: new Date().toISOString(),
-      pickup_location: "Primary", // DASHBOARD MEIN CHECK KAREIN YE NAAM SAHI HAI YA NAHI
+      pickup_location: "Primary", 
       billing_customer_name: order.customerName,
       billing_last_name: "",
       billing_address: order.address,
@@ -70,7 +67,7 @@ const createShiprocketShipment = async (order) => {
           name: order.productName || "Product",
           sku: order.productId || "SKU-SNAP",
           units: order.quantity || 1,
-          selling_price: order.amount,
+          selling_price: order.amount, // Updated amount (including COD charge)
         },
       ],
       payment_method: order.paymentMethod === "COD" ? "COD" : "Prepaid",
@@ -86,7 +83,6 @@ const createShiprocketShipment = async (order) => {
     );
 
     const shipOrderId = orderRes.data.order_id;
-    const shipmentId = orderRes.data.shipment_id;
 
     // 4. Update Database
     await Order.findByIdAndUpdate(order._id, {
@@ -134,7 +130,7 @@ router.post("/create-online-order", async (req, res) => {
   }
 });
 
-// 2. Verify Payment & Sync to Shiprocket
+// 2. Verify Payment
 router.post("/verify-payment", async (req, res) => {
   try {
     const { dbOrderId, razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
@@ -151,7 +147,6 @@ router.post("/verify-payment", async (req, res) => {
       orderStatus: "Confirmed"
     }, { new: true });
 
-    // SYNC TO SHIPROCKET
     await createShiprocketShipment(updatedOrder);
 
     res.status(200).json({ success: true, message: "Paid & Synced" });
@@ -160,17 +155,40 @@ router.post("/verify-payment", async (req, res) => {
   }
 });
 
-// 3. COD Order
+// 3. COD Order (CHANGE: Added ₹100 COD Charge & Fixed NaN)
 router.post("/create-cod-order", async (req, res) => {
   try {
     const user = getUserFromToken(req);
-    const order = await Order.create({ ...req.body, userId: user?._id, paymentMethod: "COD" });
+    
+    // Multi-check for Amount (taaki NaN na aaye)
+    const inputAmount = req.body.totalAmount || req.body.amount || req.body.totalPrice;
+
+    if (!inputAmount) {
+      return res.status(400).json({ success: false, message: "Error: Order amount missing" });
+    }
+
+    const originalTotal = Number(inputAmount);
+    const codExtraCharge = 100;
+    const finalAmount = originalTotal + codExtraCharge;
+
+    const order = await Order.create({ 
+      ...req.body, 
+      userId: user?._id, 
+      amount: finalAmount, // Updated Amount saved in DB
+      paymentMethod: "COD",
+      orderStatus: "Confirmed"
+    });
 
     // SYNC TO SHIPROCKET
     await createShiprocketShipment(order);
 
-    res.status(201).json({ success: true, message: "COD Placed", order });
+    res.status(201).json({ 
+      success: true, 
+      message: `COD Order placed! ₹${codExtraCharge} added as COD charge.`, 
+      order: order // This object contains updated amount
+    });
   } catch (error) {
+    console.error("COD Error:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 });

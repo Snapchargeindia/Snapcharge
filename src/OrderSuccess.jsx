@@ -94,6 +94,7 @@ const OrderSuccess = () => {
                     <p className="text-sm font-semibold text-[#436056] mt-1">
                       ₹{(item.price || 0) * (item.quantity || 1)}
                     </p>
+                  
                   </div>
                 </div>
               ))}
