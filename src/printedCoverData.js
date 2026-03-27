@@ -1,5 +1,3 @@
-// src/printedCoverData.js
-
 import { Import } from "lucide-react";
 import pr1 from "./assets/pr1.png";
 import pr2 from "./assets/pr2.png";

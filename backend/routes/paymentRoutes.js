@@ -50,7 +50,7 @@ const createShiprocketShipment = async (order) => {
     // 2. Prepare Payload
     const payload = {
       order_id: order._id.toString(),
-      order_date: new Date().toISOString(),
+      order_date: new Date().toISOString().split("T")[0],
       pickup_location: "Primary", 
       billing_customer_name: order.customerName,
       billing_last_name: "",
@@ -67,7 +67,7 @@ const createShiprocketShipment = async (order) => {
           name: order.productName || "Product",
           sku: order.productId || "SKU-SNAP",
           units: order.quantity || 1,
-          selling_price: order.amount, // Updated amount (including COD charge)
+          selling_price: order.amount / (order.quantity || 1),
         },
       ],
       payment_method: order.paymentMethod === "COD" ? "COD" : "Prepaid",

@@ -1,135 +1,127 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "./CartContext";
-import { requireUserLogin } from "./authGuard";
 
-// ─────────────────────────────────────────────────────────────
-// Shiprocket UI assets (from official docs — PROD)
-// ─────────────────────────────────────────────────────────────
-const SR_UI_CSS    = "https://checkout-ui.shiprocket.com/assets/styles/shopify.css";
-const SR_UI_SCRIPT = "https://checkout-ui.shiprocket.com/assets/js/channels/login.js";
+const IS_DEV = false;
+
+const ENV = {
+  apiBase: IS_DEV
+    ? "https://fastrr-api-dev.pickrr.com"
+    : "https://checkout-api.shiprocket.com",
+  uiScript: IS_DEV
+    ? "https://fastrr-boost-ui-dev.pickrr.com/assets/js/channels/login.js"
+    : "https://checkout-ui.shiprocket.com/assets/js/channels/login.js",
+  uiCss: IS_DEV
+    ? "https://fastrr-boost-ui-dev.pickrr.com/assets/styles/shopify.css"
+    : "https://checkout-ui.shiprocket.com/assets/styles/shopify.css",
+};
 
 const loadShiprocketAssets = () =>
   new Promise((resolve) => {
-    if (!document.querySelector(`link[href="${SR_UI_CSS}"]`)) {
+    if (!document.querySelector(`link[href="${ENV.uiCss}"]`)) {
       const link = document.createElement("link");
-      link.rel   = "stylesheet";
-      link.href  = SR_UI_CSS;
+      link.rel = "stylesheet";
+      link.href = ENV.uiCss;
       document.head.appendChild(link);
     }
-    if (!document.querySelector(`script[src="${SR_UI_SCRIPT}"]`)) {
-      const script   = document.createElement("script");
-      script.src     = SR_UI_SCRIPT;
-      script.onload  = () => resolve(true);
-      script.onerror = () => resolve(false);
-      document.head.appendChild(script);
-    } else {
+    if (document.querySelector(`script[src="${ENV.uiScript}"]`)) {
       resolve(true);
+      return;
     }
+    const script = document.createElement("script");
+    script.src = ENV.uiScript;
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.head.appendChild(script);
   });
 
-// ─────────────────────────────────────────────────────────────
-// CART PAGE
-// ─────────────────────────────────────────────────────────────
 const CartPage = () => {
   const navigate = useNavigate();
-  const { cartItems, removeFromCart, updateQuantity, cartTotal, clearCart } =
-    useCart();
-
+  const { cartItems, removeFromCart, updateQuantity, cartTotal, clearCart } = useCart();
   const [loading, setLoading] = useState(false);
 
-  // Preload Shiprocket assets on mount
   useEffect(() => {
     loadShiprocketAssets();
   }, []);
 
-  // ── Checkout handler ──────────────────────────────────────
   const handleCheckout = async () => {
-    // Step 1: Check login
-    const allowed = requireUserLogin(
-      navigate,
-      "Please login first to continue checkout",
-      "/login"
-    );
-    if (!allowed) return;
-
     setLoading(true);
 
     try {
-      // Step 2: Get Shiprocket access token from backend
       const tokenRes = await fetch(
         "http://localhost:5000/api/shiprocket/initiate",
         {
-          method     : "POST",
-          headers    : { "Content-Type": "application/json" },
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           credentials: "include",
         }
       );
+
       const tokenData = await tokenRes.json();
+      console.log("Token response:", tokenData);
 
       if (!tokenData.success || !tokenData.token) {
-        alert("Failed to initiate Shiprocket checkout. Please try again.");
+        alert("Failed to initiate checkout. Please try again.");
         setLoading(false);
         return;
       }
 
-      // Step 3: Make sure Shiprocket JS is loaded
-      await loadShiprocketAssets();
-
-      if (!window.HeadlessCheckout) {
-        alert("Shiprocket failed to load. Please refresh and try again.");
+      const loaded = await loadShiprocketAssets();
+      if (!loaded || !window.HeadlessCheckout) {
+        alert("Checkout failed to load. Please refresh and try again.");
         setLoading(false);
         return;
       }
 
-      // Step 4: Open Shiprocket OTP + address dialog
-      const obj = {
-        amount    : cartTotal,
-        themecolor: "436056", // brand green without #
-        image     : "", // optional: your logo CDN URL
+      const checkoutConfig = {
+        amount: cartTotal,
+        themecolor: "436056",
+        image: "",
       };
 
       window.HeadlessCheckout.buyNow(
         { preventDefault: () => {} },
         tokenData.token,
-        obj,
+        checkoutConfig,
         async (response) => {
           console.log("Shiprocket response:", response);
 
           if (response?.status === "success") {
             const addresses = response.data?.addresses || [];
-            const phone     = response.data?.phone || "";
-            const address   = addresses[0] || {};
+            const phone = response.data?.phone || "";
+            const address = addresses[0] || {};
 
-            // Step 5: Create order on backend with fetched address
             const orderRes = await fetch(
               "http://localhost:5000/api/shiprocket/create-order",
               {
-                method     : "POST",
-                headers    : { "Content-Type": "application/json" },
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
                 credentials: "include",
-                body       : JSON.stringify({
+                body: JSON.stringify({
                   cartItems,
                   cartTotal,
                   customer: {
-                    name   : `${address.first_name || ""} ${address.last_name || ""}`.trim(),
-                    email  : address.email   || "",
-                    phone  : address.phone   || phone || "",
-                    address: address.line1   || "",
-                    city   : address.city    || "",
+                    name: `${address.first_name || ""} ${address.last_name || ""}`.trim(),
+                    email: address.email || "",
+                    phone: address.phone || phone || "",
+                    address: address.line1 || "",
+                    city: address.city || "",
                     pincode: address.pincode || "",
-                    state  : address.state   || "",
+                    state: address.state || "",
                   },
                 }),
               }
             );
 
             const orderData = await orderRes.json();
+            console.log("Order response:", orderData);
 
             if (orderData.checkoutUrl) {
               window.location.href = orderData.checkoutUrl;
             } else {
               alert(`✅ Order placed! Order ID: ${orderData.orderId || "N/A"}`);
+              clearCart();
+              navigate("/order-success");
             }
           } else {
             alert("Checkout was cancelled. Please try again.");
@@ -145,16 +137,11 @@ const CartPage = () => {
     }
   };
 
-  // ── Empty cart ────────────────────────────────────────────
   if (cartItems.length === 0) {
     return (
       <div className="min-h-screen bg-[#FAEBD7] pt-32 pb-16 flex flex-col items-center justify-center text-center px-6">
-        <h1 className="text-3xl font-bold text-[#436056] mb-4">
-          Your Cart is Empty
-        </h1>
-        <p className="text-gray-600 mb-6">
-          Looks like you haven&apos;t added anything yet.
-        </p>
+        <h1 className="text-3xl font-bold text-[#436056] mb-4">Your Cart is Empty</h1>
+        <p className="text-gray-600 mb-6">Looks like you haven&apos;t added anything yet.</p>
         <Link
           to="/"
           className="bg-[#9DC183] text-white px-6 py-3 rounded-full font-semibold hover:bg-[#436056] transition"
@@ -165,12 +152,11 @@ const CartPage = () => {
     );
   }
 
-  // ── Cart page ─────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-[#FAEBD7] pt-32 pb-16 px-4 sm:px-6">
       <div className="max-w-7xl mx-auto grid lg:grid-cols-[1.5fr,0.8fr] gap-10">
 
-        {/* Cart items */}
+        {/* Cart Items */}
         <div>
           <h1 className="text-3xl font-bold mb-8 text-[#436056]">My Cart</h1>
           <div className="space-y-6">
@@ -185,17 +171,9 @@ const CartPage = () => {
                   className="w-24 h-24 object-contain rounded-lg bg-[#f8f8f8]"
                 />
                 <div className="flex-1 text-center sm:text-left">
-                  <h2 className="text-lg font-semibold text-[#436056]">
-                    {item.name}
-                  </h2>
-                  {item.subtitle && (
-                    <p className="text-sm text-gray-500 mt-1">{item.subtitle}</p>
-                  )}
-                  {item.variant && (
-                    <p className="text-sm text-gray-500 mt-1">
-                      Variant: {item.variant}
-                    </p>
-                  )}
+                  <h2 className="text-lg font-semibold text-[#436056]">{item.name}</h2>
+                  {item.subtitle && <p className="text-sm text-gray-500 mt-1">{item.subtitle}</p>}
+                  {item.variant && <p className="text-sm text-gray-500 mt-1">Variant: {item.variant}</p>}
                   <p className="text-gray-600 mt-2">
                     ₹{Number(item.price || 0) * Number(item.quantity || 1)}
                   </p>
@@ -203,18 +181,12 @@ const CartPage = () => {
                     <button
                       onClick={() => updateQuantity(item.id, "dec")}
                       className="w-8 h-8 border border-[#cfd8cf] rounded-full flex items-center justify-center hover:bg-[#9DC18322] transition"
-                    >
-                      -
-                    </button>
-                    <span className="font-semibold text-[#436056]">
-                      {item.quantity}
-                    </span>
+                    >-</button>
+                    <span className="font-semibold text-[#436056]">{item.quantity}</span>
                     <button
                       onClick={() => updateQuantity(item.id, "inc")}
                       className="w-8 h-8 border border-[#cfd8cf] rounded-full flex items-center justify-center hover:bg-[#9DC18322] transition"
-                    >
-                      +
-                    </button>
+                    >+</button>
                   </div>
                 </div>
                 <button
@@ -228,11 +200,9 @@ const CartPage = () => {
           </div>
         </div>
 
-        {/* Price summary */}
+        {/* Price Summary */}
         <div className="bg-white rounded-2xl border border-[#e4d7c7] p-6 h-fit shadow-sm">
-          <h2 className="text-lg font-semibold mb-4 text-[#436056]">
-            Price Details
-          </h2>
+          <h2 className="text-lg font-semibold mb-4 text-[#436056]">Price Details</h2>
           <div className="space-y-3 text-sm text-[#436056]">
             <div className="flex justify-between">
               <span>Price ({cartItems.length} items)</span>
@@ -247,12 +217,12 @@ const CartPage = () => {
               <span>FREE</span>
             </div>
           </div>
+
           <div className="border-t mt-4 pt-4 flex justify-between font-semibold text-lg text-[#436056]">
             <span>Total Amount</span>
             <span>₹{cartTotal}</span>
           </div>
 
-          {/* ✅ Proceed to Checkout */}
           <button
             onClick={handleCheckout}
             disabled={loading}
@@ -282,6 +252,10 @@ const CartPage = () => {
           >
             Clear Cart
           </button>
+
+          <p className="text-center text-xs text-gray-400 mt-3">
+            {IS_DEV ? "🔧 DEV mode" : "🚀 PROD mode"}
+          </p>
         </div>
 
       </div>

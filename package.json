@@ -28,6 +28,7 @@
     "react-router-dom": "^7.13.1",
     "react-select": "^5.10.2",
     "recharts": "^3.8.0",
+    "shiprocket-api": "^1.1.4",
     "tailwindcss": "^4.2.1",
     "twilio": "^5.12.2"
   },

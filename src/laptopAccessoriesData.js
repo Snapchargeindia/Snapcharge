@@ -164,7 +164,7 @@ id:6,
 name:"POP Keys Mechanical Bluetooth Keyboard - Yellow Tricolor",
 price:1819,
 mrp:2519,
-images:[lp20,lp21],
+images:[lp20,lp19],
 details:"Colorful mechanical Bluetooth keyboard offering comfortable typing and stylish setup.",
 specs:[
 "Mechanical switches",

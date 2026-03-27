@@ -4,18 +4,18 @@ const crypto  = require("crypto");
 
 const router = express.Router();
 
-// ─────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────
 // CREDENTIALS
-// ─────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────
 const SR_API_KEY    = process.env.SHIPROCKET_API_KEY    || "zeYGVyDtCczihjDC";
 const SR_SECRET_KEY = process.env.SHIPROCKET_SECRET_KEY || "PvcBuIxKLaaacHvmNEi34mFchjisYGn5";
 
 const SR_CHECKOUT_BASE = "https://checkout-api.shiprocket.com";
 const SR_SHIPPING_BASE = "https://apiv2.shiprocket.in/v1/external";
 
-// ─────────────────────────────────────────────────────────────
-// HMAC-SHA256 generator (required for all checkout API calls)
-// ─────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────
+// HMAC-SHA256 generator
+// ─────────────────────────────────────────────
 const generateHMAC = (payload) => {
   const str = typeof payload === "string" ? payload : JSON.stringify(payload);
   return crypto
@@ -24,11 +24,9 @@ const generateHMAC = (payload) => {
     .digest("base64");
 };
 
-// ─────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────
 // ROUTE 1 — POST /api/shiprocket/initiate
-// Frontend calls this first to get an access token
-// That token is passed to HeadlessCheckout.buyNow() on frontend
-// ─────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────
 router.post("/initiate", async (req, res) => {
   const payload = {
     address  : true,
@@ -54,6 +52,7 @@ router.post("/initiate", async (req, res) => {
       token    : response.data.result.token,
       expiresAt: response.data.result.expires_at,
     });
+
   } catch (err) {
     console.error("❌ Initiate error:", err.response?.data || err.message);
     res.status(500).json({
@@ -63,11 +62,9 @@ router.post("/initiate", async (req, res) => {
   }
 });
 
-// ─────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────
 // ROUTE 2 — POST /api/shiprocket/customer-data
-// Called after user completes OTP in HeadlessCheckout dialog
-// Body: { token: "authorised_customer_token" }
-// ─────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────
 router.post("/customer-data", async (req, res) => {
   const { token } = req.body;
 
@@ -92,6 +89,7 @@ router.post("/customer-data", async (req, res) => {
 
     console.log("✅ Customer data fetched");
     res.json({ success: true, data: response.data });
+
   } catch (err) {
     console.error("❌ Customer data error:", err.response?.data || err.message);
     res.status(500).json({
@@ -101,11 +99,9 @@ router.post("/customer-data", async (req, res) => {
   }
 });
 
-// ─────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────
 // ROUTE 3 — POST /api/shiprocket/create-order
-// Called after address is selected on frontend
-// Body: { cartItems, cartTotal, customer }
-// ─────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────
 let shippingToken = null;
 
 const getShippingToken = async () => {
@@ -144,12 +140,15 @@ router.post("/create-order", async (req, res) => {
       shipping_is_billing   : true,
       payment_method        : "Prepaid",
       sub_total             : cartTotal,
-      length: 10, breadth: 10, height: 10, weight: 1,
+      length : 10,
+      breadth: 10,
+      height : 10,
+      weight : 1,
       order_items: cartItems.map((item) => ({
-        name          : item.name,
-        sku           : item.id?.toString() || "SKU001",
-        units         : item.quantity,
-        selling_price : item.price,
+        name         : item.name,
+        sku          : item.id?.toString() || "SKU001",
+        units        : item.quantity,
+        selling_price: item.price,
       })),
     };
 
@@ -172,6 +171,7 @@ router.post("/create-order", async (req, res) => {
       checkoutUrl: response.data.checkout_url || null,
       data       : response.data,
     });
+
   } catch (err) {
     console.error("❌ Create order error:", err.response?.data || err.message);
     if (err.response?.status === 401) shippingToken = null;
