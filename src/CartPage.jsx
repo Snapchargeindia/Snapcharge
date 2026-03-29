@@ -1,14 +1,13 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "./CartContext";
-import { requireUserLogin } from "./authGuard";
-
-// ✅ API URL from env
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 const IS_DEV = false;
 
 const ENV = {
+  apiBase: IS_DEV
+    ? "https://fastrr-api-dev.pickrr.com"
+    : "https://checkout-api.shiprocket.com",
   uiScript: IS_DEV
     ? "https://fastrr-boost-ui-dev.pickrr.com/assets/js/channels/login.js"
     : "https://checkout-ui.shiprocket.com/assets/js/channels/login.js",
@@ -46,22 +45,17 @@ const CartPage = () => {
   }, []);
 
   const handleCheckout = async () => {
-    const allowed = requireUserLogin(
-      navigate,
-      "Please login first to continue checkout",
-      "/login"
-    );
-    if (!allowed) return;
-
     setLoading(true);
 
     try {
-      // ✅ Initiate checkout token
-      const tokenRes = await fetch(`${API_URL}/api/shiprocket/initiate`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-      });
+      const tokenRes = await fetch(
+        "https://Snapcharge-backend-prod-env.eba-m6tqr9gn.eu-north-1.elasticbeanstalk.com/api/shiprocket/initiate",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+        }
+      );
 
       const tokenData = await tokenRes.json();
       console.log("Token response:", tokenData);
@@ -79,10 +73,16 @@ const CartPage = () => {
         return;
       }
 
+      const checkoutConfig = {
+        amount: cartTotal,
+        themecolor: "436056",
+        image: "",
+      };
+
       window.HeadlessCheckout.buyNow(
         { preventDefault: () => {} },
         tokenData.token,
-        { amount: cartTotal, themecolor: "436056", image: "" },
+        checkoutConfig,
         async (response) => {
           console.log("Shiprocket response:", response);
 
@@ -91,27 +91,30 @@ const CartPage = () => {
             const phone = response.data?.phone || "";
             const address = addresses[0] || {};
 
-            // ✅ Create order in backend
-            const orderRes = await fetch(`${API_URL}/api/shiprocket/create-order`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              credentials: "include",
-              body: JSON.stringify({
-                cartItems,
-                cartTotal,
-                customer: {
-                  name: `${address.first_name || ""} ${address.last_name || ""}`.trim(),
-                  email: address.email || "",
-                  phone: address.phone || phone || "",
-                  address: address.line1 || "",
-                  city: address.city || "",
-                  pincode: address.pincode || "",
-                  state: address.state || "",
-                },
-              }),
-            });
+            const orderRes = await fetch(
+              "https://Snapcharge-backend-prod-env.eba-m6tqr9gn.eu-north-1.elasticbeanstalk.com/api/shiprocket/create-order",
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify({
+                  cartItems,
+                  cartTotal,
+                  customer: {
+                    name: `${address.first_name || ""} ${address.last_name || ""}`.trim(),
+                    email: address.email || "",
+                    phone: address.phone || phone || "",
+                    address: address.line1 || "",
+                    city: address.city || "",
+                    pincode: address.pincode || "",
+                    state: address.state || "",
+                  },
+                }),
+              }
+            );
 
             const orderData = await orderRes.json();
+            console.log("Order response:", orderData);
 
             if (orderData.checkoutUrl) {
               window.location.href = orderData.checkoutUrl;
@@ -123,6 +126,7 @@ const CartPage = () => {
           } else {
             alert("Checkout was cancelled. Please try again.");
           }
+
           setLoading(false);
         }
       );
@@ -138,7 +142,10 @@ const CartPage = () => {
       <div className="min-h-screen bg-[#FAEBD7] pt-32 pb-16 flex flex-col items-center justify-center text-center px-6">
         <h1 className="text-3xl font-bold text-[#436056] mb-4">Your Cart is Empty</h1>
         <p className="text-gray-600 mb-6">Looks like you haven&apos;t added anything yet.</p>
-        <Link to="/" className="bg-[#9DC183] text-white px-6 py-3 rounded-full font-semibold hover:bg-[#436056] transition">
+        <Link
+          to="/"
+          className="bg-[#9DC183] text-white px-6 py-3 rounded-full font-semibold hover:bg-[#436056] transition"
+        >
           Continue Shopping
         </Link>
       </div>
@@ -171,15 +178,21 @@ const CartPage = () => {
                     ₹{Number(item.price || 0) * Number(item.quantity || 1)}
                   </p>
                   <div className="flex items-center justify-center sm:justify-start gap-3 mt-3">
-                    <button onClick={() => updateQuantity(item.id, "dec")}
-                      className="w-8 h-8 border border-[#cfd8cf] rounded-full flex items-center justify-center hover:bg-[#9DC18322] transition">-</button>
+                    <button
+                      onClick={() => updateQuantity(item.id, "dec")}
+                      className="w-8 h-8 border border-[#cfd8cf] rounded-full flex items-center justify-center hover:bg-[#9DC18322] transition"
+                    >-</button>
                     <span className="font-semibold text-[#436056]">{item.quantity}</span>
-                    <button onClick={() => updateQuantity(item.id, "inc")}
-                      className="w-8 h-8 border border-[#cfd8cf] rounded-full flex items-center justify-center hover:bg-[#9DC18322] transition">+</button>
+                    <button
+                      onClick={() => updateQuantity(item.id, "inc")}
+                      className="w-8 h-8 border border-[#cfd8cf] rounded-full flex items-center justify-center hover:bg-[#9DC18322] transition"
+                    >+</button>
                   </div>
                 </div>
-                <button onClick={() => removeFromCart(item.id)}
-                  className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition">
+                <button
+                  onClick={() => removeFromCart(item.id)}
+                  className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition"
+                >
                   Remove
                 </button>
               </div>
@@ -196,32 +209,55 @@ const CartPage = () => {
               <span>₹{cartTotal}</span>
             </div>
             <div className="flex justify-between text-green-600">
-              <span>Discount</span><span>₹0</span>
+              <span>Discount</span>
+              <span>₹0</span>
             </div>
             <div className="flex justify-between">
-              <span>Delivery Charges</span><span>FREE</span>
+              <span>Delivery Charges</span>
+              <span>FREE</span>
             </div>
           </div>
+
           <div className="border-t mt-4 pt-4 flex justify-between font-semibold text-lg text-[#436056]">
             <span>Total Amount</span>
             <span>₹{cartTotal}</span>
           </div>
+
           <button
             onClick={handleCheckout}
             disabled={loading}
             className="w-full mt-6 bg-[#9DC183] text-white py-3 rounded-lg font-semibold hover:bg-[#436056] transition flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {loading ? (
-              <><svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="3" strokeDasharray="30" strokeDashoffset="10"/>
-              </svg>Loading…</>
-            ) : "Proceed to Checkout"}
+              <>
+                <svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="3" strokeDasharray="30" strokeDashoffset="10"/>
+                </svg>
+                Loading…
+              </>
+            ) : (
+              <>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <circle cx="8" cy="8" r="7" stroke="white" strokeWidth="1.4"/>
+                  <path d="M5 8l2 2 4-4" stroke="white" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                Proceed to Checkout
+              </>
+            )}
           </button>
-          <button onClick={clearCart}
-            className="w-full mt-3 border border-[#d9ddd6] py-2 rounded-lg text-[#436056] hover:bg-gray-50 transition">
+
+          <button
+            onClick={clearCart}
+            className="w-full mt-3 border border-[#d9ddd6] py-2 rounded-lg text-[#436056] hover:bg-gray-50 transition"
+          >
             Clear Cart
           </button>
+
+          <p className="text-center text-xs text-gray-400 mt-3">
+            {IS_DEV ? "🔧 DEV mode" : "🚀 PROD mode"}
+          </p>
         </div>
+
       </div>
     </div>
   );
