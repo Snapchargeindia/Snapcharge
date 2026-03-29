@@ -13,6 +13,8 @@ const app = express();
 const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:3000",
+  "https://snapcharge.in",
+  "https://www.snapcharge.in",
   "https://snapchargee.in",
   "https://www.snapchargee.in",
 ];
@@ -54,7 +56,7 @@ app.use("/api/payment",     require("./routes/paymentRoutes"));
 app.use("/api/orders",      require("./routes/orderRoutes"));
 app.use("/api/track-order", require("./routes/trackOrderRoutes"));
 app.use("/api/admin-auth",  require("./routes/adminAuthRoutes"));
-app.use("/api/shiprocket",  require("./routes/shiprocketRoutes")); // ✅ Shiprocket routes
+app.use("/api/shiprocket",  require("./routes/shiprocketRoutes"));
 app.use("/api/catalog",     require("./routes/catalogRoutes"));
 
 app.use(
